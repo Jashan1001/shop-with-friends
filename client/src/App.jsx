@@ -2,8 +2,8 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useAuthStore } from './store/authStore'
 import LoginPage from './pages/LoginPage'
 import SignupPage from './pages/SignupPage'
-
-const DashboardPage = () => <div className="p-8 font-display text-2xl">Dashboard</div>
+import DashboardPage from './pages/dashboard/DashboardPage'
+import JoinRoomPage from './pages/JoinRoomPage'
 
 // Protected route — redirects to /login if not authenticated
 const ProtectedRoute = ({ children }) => {
@@ -25,6 +25,7 @@ function App() {
             </ProtectedRoute>
           }
         />
+        <Route path="/join/:code" element={<ProtectedRoute><JoinRoomPage /></ProtectedRoute>} />
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </BrowserRouter>
