@@ -4,7 +4,7 @@ import { Home, ThumbsUp, MessageSquare, Zap, Link, CheckSquare, Plus, ShoppingBa
 import { stagger, slideUp } from '../animations/variants'
 
 const STEPS = [
-  { num: '01', icon: Plus,         title: 'Create a Room',  desc: 'Name it, pick an emoji, set the vibe.',     accent: 'bg-yellow' },
+  { num: '01', icon: Plus,         title: 'Create a Room',  desc: 'Name it, pick an icon, set the vibe.',      accent: 'bg-yellow' },
   { num: '02', icon: ShoppingBag,  title: 'Add Products',   desc: 'Paste links or add manually. Any platform.', accent: 'bg-lime' },
   { num: '03', icon: ThumbsUp,     title: 'Vote Together',  desc: 'Everyone votes. Best products rise up.',     accent: 'bg-blue' },
   { num: '04', icon: CheckSquare,  title: 'Decide',         desc: 'Mark as bought. Close the deal.',            accent: 'bg-coral' },

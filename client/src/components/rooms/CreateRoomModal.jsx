@@ -8,8 +8,7 @@ import { createRoom } from '../../api/rooms.api'
 import errorMessage from '../../utils/errorMessage'
 import { scaleIn } from '../../animations/variants'
 import toast from 'react-hot-toast'
-
-const EMOJIS = ['🛒', '💻', '👟', '📱', '🏠', '👗', '🎮', '📚', '🍕', '✈️']
+import { ROOM_ICON_OPTIONS } from '../../utils/roomIcons'
 
 const schema = z.object({
   name: z.string().min(1, 'Room name is required').max(60),
@@ -18,20 +17,20 @@ const schema = z.object({
 })
 
 export default function CreateRoomModal({ onClose, onCreated }) {
-  const [selectedEmoji, setSelectedEmoji] = useState('🛒')
+  const [selectedIcon, setSelectedIcon] = useState('cart')
   const [loading, setLoading] = useState(false)
   const [serverError, setServerError] = useState('')
 
   const { register, handleSubmit, formState: { errors } } = useForm({
     resolver: zodResolver(schema),
-    defaultValues: { emoji: '🛒' },
+    defaultValues: { emoji: 'cart' },
   })
 
   const onSubmit = async (data) => {
     setLoading(true)
     setServerError('')
     try {
-      const res = await createRoom({ ...data, emoji: selectedEmoji })
+      const res = await createRoom({ ...data, emoji: selectedIcon })
       toast.success('Room created!')
       onCreated(res.data.room)
       onClose()
@@ -85,26 +84,31 @@ export default function CreateRoomModal({ onClose, onCreated }) {
               </div>
             )}
 
-            {/* Emoji picker */}
+            {/* Icon picker */}
             <div className="mb-5">
               <label className="font-mono text-[11px] font-bold uppercase tracking-widest block mb-2">
-                Pick an emoji
+                Pick an icon
               </label>
               <div className="flex gap-2 flex-wrap">
-                {EMOJIS.map((emoji) => (
+                {ROOM_ICON_OPTIONS.map((option) => {
+                  const Icon = option.icon
+
+                  return (
                   <button
-                    key={emoji}
+                    key={option.value}
                     type="button"
-                    onClick={() => setSelectedEmoji(emoji)}
-                    className={`text-xl w-10 h-10 flex items-center justify-center border-[2.5px] border-black transition-all
-                      ${selectedEmoji === emoji
+                    onClick={() => setSelectedIcon(option.value)}
+                    className={`w-10 h-10 flex items-center justify-center border-[2.5px] border-black transition-all
+                      ${selectedIcon === option.value
                         ? 'bg-yellow shadow-brut'
                         : 'bg-white hover:bg-cream'
                       }`}
+                    title={option.label}
                   >
-                    {emoji}
+                    <Icon size={18} />
                   </button>
-                ))}
+                  )
+                })}
               </div>
             </div>
 

@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
-import { ArrowLeft, UserPlus, Plus, Users, Settings, Trash2, LogOut, MoreVertical } from 'lucide-react'
+import { ArrowLeft, UserPlus, Plus, Users, Settings, Trash2, LogOut, MoreVertical, Package } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { getRoom, deleteRoom, leaveRoom, updateRoom, removeMember } from '../../api/rooms.api'
 import { getProducts } from '../../api/products.api'
@@ -14,6 +14,7 @@ import CommentPanel from '../../components/comments/CommentPanel'
 import { stagger, slideUp } from '../../animations/variants'
 import { useRoom } from '../../hooks/useRoom'
 import { ProductCardSkeleton } from '../../components/ui/Skeleton'
+import { getRoomIconOption } from '../../utils/roomIcons'
 
 export default function RoomPage() {
   const { roomId } = useParams()
@@ -54,6 +55,7 @@ export default function RoomPage() {
   const currentUserId = user?.id || user?._id
   const createdById = roomData?.createdBy?._id || roomData?.createdBy
   const isOwner = String(createdById || '') === String(currentUserId || '')
+  const RoomIcon = getRoomIconOption(roomData?.emoji).icon
 
   // Sort products
   const sortedProducts = [...products].sort((a, b) => {
@@ -135,7 +137,9 @@ export default function RoomPage() {
           Back
         </button>
         <div className="flex items-center gap-2 flex-1">
-          <span className="text-2xl">{roomData.emoji}</span>
+          <div className="w-10 h-10 bg-yellow border-[2.5px] border-black flex items-center justify-center">
+            <RoomIcon size={18} className="text-black" />
+          </div>
           <h1 className="font-display text-xl font-bold">{roomData.name}</h1>
           {isOwner && (
             <span className="font-mono text-[10px] font-bold uppercase tracking-widest bg-purple text-white border-[2px] border-black px-2 py-0.5">
@@ -305,7 +309,9 @@ export default function RoomPage() {
                 animate="visible"
                 className="border-[2.5px] border-black border-dashed p-16 text-center"
               >
-                <div className="text-4xl mb-3">📦</div>
+                <div className="w-14 h-14 bg-yellow border-[2.5px] border-black mx-auto flex items-center justify-center mb-3 shadow-brut">
+                  <Package size={24} className="text-black" />
+                </div>
                 <h3 className="font-display text-xl font-bold mb-2">No products yet</h3>
                 <p className="font-body text-muted text-sm">Add the first product to start voting.</p>
               </motion.div>

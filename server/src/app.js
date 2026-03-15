@@ -14,7 +14,10 @@ const userRoutes = require('./routes/userRoutes');
 const app = express();
 
 app.use(helmet());
-app.use(cors({ origin: process.env.CLIENT_URL }));
+app.use(cors({
+  origin: process.env.CLIENT_URL,
+  credentials: true,
+}));
 app.use(express.json());
 
 if (process.env.NODE_ENV === 'development') {
@@ -37,6 +40,9 @@ app.use((err, req, res, next) => {
     success: false,
     message: err.message || 'Internal server error',
   });
+});
+app.get("/", (req, res) => {
+  res.send("CartCrew Backend API is running ");
 });
 
 module.exports = app;

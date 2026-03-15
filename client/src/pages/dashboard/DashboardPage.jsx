@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
-import { Plus, LogOut, Zap } from 'lucide-react'
+import { Plus, LogOut, Zap, ShoppingCart } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { getRooms } from '../../api/rooms.api'
 import { logout } from '../../api/auth.api'
@@ -105,8 +105,8 @@ export default function DashboardPage() {
             animate="visible"
             className="border-[2.5px] border-black bg-white shadow-brut p-16 text-center"
           >
-            <div className="w-16 h-16 bg-yellow border-[2.5px] border-black mx-auto flex items-center justify-center mb-6 text-3xl">
-              🛒
+            <div className="w-16 h-16 bg-yellow border-[2.5px] border-black mx-auto flex items-center justify-center mb-6">
+              <ShoppingCart size={28} className="text-black" />
             </div>
             <h2 className="font-display text-2xl font-bold mb-2">No rooms yet</h2>
             <p className="font-body text-muted mb-6 max-w-sm mx-auto">

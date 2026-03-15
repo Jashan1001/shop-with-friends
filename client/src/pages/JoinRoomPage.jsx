@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
+import { CircleX } from 'lucide-react'
 import { joinRoom } from '../api/rooms.api'
 import errorMessage from '../utils/errorMessage'
 import { slideUp } from '../animations/variants'
 import api from '../api/axios'
+import { getRoomIconOption } from '../utils/roomIcons'
 
 export default function JoinRoomPage() {
   const { code } = useParams()
@@ -13,6 +15,7 @@ export default function JoinRoomPage() {
   const [error, setError] = useState('')
   const [room, setRoom] = useState(null)
   const [joining, setJoining] = useState(false)
+  const RoomIcon = getRoomIconOption(room?.emoji).icon
 
   useEffect(() => {
     const preview = async () => {
@@ -51,7 +54,9 @@ export default function JoinRoomPage() {
     return (
       <div className="min-h-screen bg-cream flex items-center justify-center p-8">
         <div className="text-center">
-          <div className="text-4xl mb-4">❌</div>
+          <div className="w-14 h-14 bg-coral text-white border-[2.5px] border-black flex items-center justify-center mx-auto mb-4 shadow-brut">
+            <CircleX size={26} />
+          </div>
           <h2 className="font-display text-2xl font-bold mb-2">Invalid invite</h2>
           <p className="font-mono text-sm text-coral mb-6">{error}</p>
           <button
@@ -73,7 +78,9 @@ export default function JoinRoomPage() {
         animate="visible"
         className="bg-white border-[2.5px] border-black shadow-brut-xl p-8 w-full max-w-sm text-center"
       >
-        <div className="text-5xl mb-4">{room?.emoji}</div>
+        <div className="w-16 h-16 bg-yellow border-[2.5px] border-black flex items-center justify-center mx-auto mb-4 shadow-brut">
+          <RoomIcon size={28} className="text-black" />
+        </div>
         <h2 className="font-display text-2xl font-bold mb-1">{room?.name}</h2>
         {room?.description && (
           <p className="font-body text-sm text-muted mb-2">{room.description}</p>

@@ -58,9 +58,9 @@ export default function SignupPage() {
       {/* Left panel — branding */}
       <div className="hidden lg:flex w-1/2 bg-black flex-col justify-between p-12">
         <div>
-          <span className="font-display text-2xl font-bold text-yellow">
+          <Link to="/landing" className="font-display text-2xl font-bold text-yellow hover:opacity-80 transition-opacity">
             CartCrew
-          </span>
+          </Link>
         </div>
         <div>
           <h1 className="font-display text-5xl font-bold text-white leading-tight">
@@ -85,7 +85,7 @@ export default function SignupPage() {
         >
           {/* Mobile logo */}
           <motion.div variants={slideUp} className="lg:hidden mb-8">
-            <span className="font-display text-2xl font-bold">CartCrew</span>
+            <Link to="/landing" className="font-display text-2xl font-bold hover:opacity-80 transition-opacity">CartCrew</Link>
           </motion.div>
 
           <motion.h2 variants={slideUp} className="font-display text-3xl font-bold mb-2">

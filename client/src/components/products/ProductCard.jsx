@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { ExternalLink, Trash2, CheckCircle, XCircle } from 'lucide-react'
+import { ExternalLink, Trash2, CheckCircle, XCircle, Package, ShoppingBag, Shirt, ShoppingCart } from 'lucide-react'
 import { slideUp } from '../../animations/variants'
 import VoteButtons from './VoteButtons'
 import formatPrice from '../../utils/formatPrice'
@@ -21,11 +21,19 @@ const PLATFORM_BADGE = {
   other:    { bg: 'bg-cream',  text: 'text-black', label: 'Other' },
 }
 
+const PLATFORM_ICON = {
+  amazon: Package,
+  flipkart: ShoppingBag,
+  myntra: Shirt,
+  other: ShoppingCart,
+}
+
 export default function ProductCard({ product, onClick, onVoteUpdate, onDelete, onStatusUpdate, isRoomOwner, isNew }) {
   const { user } = useAuthStore()
   const isProductOwner = product.addedBy?._id === user?.id
   const style = STATUS_STYLES[product.status] || STATUS_STYLES.active
   const badge = PLATFORM_BADGE[product.platform] || PLATFORM_BADGE.other
+  const ProductPlatformIcon = PLATFORM_ICON[product.platform] || PLATFORM_ICON.other
 
   const handleDelete = async (e) => {
     e.stopPropagation()
@@ -67,12 +75,7 @@ export default function ProductCard({ product, onClick, onVoteUpdate, onDelete, 
         </div>
       ) : (
         <div className="aspect-video border-b-[2.5px] border-black bg-cream flex items-center justify-center">
-          <span className="text-4xl">
-            {product.platform === 'amazon' ? '📦'
-              : product.platform === 'flipkart' ? '🛍️'
-              : product.platform === 'myntra' ? '👗'
-              : '🛒'}
-          </span>
+          <ProductPlatformIcon size={34} className="text-black" />
         </div>
       )}
 

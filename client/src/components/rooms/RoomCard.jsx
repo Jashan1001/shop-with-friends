@@ -2,11 +2,13 @@ import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import { slideUp } from '../../animations/variants'
 import { useAuthStore } from '../../store/authStore'
+import { getRoomIconOption } from '../../utils/roomIcons'
 
 export default function RoomCard({ room }) {
   const navigate = useNavigate()
   const { user } = useAuthStore()
   const isOwner = room.createdBy._id === user?.id
+  const RoomIcon = getRoomIconOption(room.emoji).icon
 
   return (
     <motion.div
@@ -15,9 +17,11 @@ export default function RoomCard({ room }) {
       onClick={() => navigate(`/room/${room._id}`)}
       className="bg-white border-[2.5px] border-black shadow-brut hover:shadow-brut-xl transition-shadow cursor-pointer p-5"
     >
-      {/* Emoji + name */}
+      {/* Icon + name */}
       <div className="flex items-start justify-between mb-3">
-        <span className="text-3xl">{room.emoji}</span>
+        <div className="w-11 h-11 bg-yellow border-[2.5px] border-black flex items-center justify-center">
+          <RoomIcon size={22} className="text-black" />
+        </div>
         {/* Owner badge */}
         {isOwner && (
           <span className="font-mono text-[10px] font-bold uppercase tracking-widest bg-purple text-white border-[2px] border-black px-2 py-0.5">
