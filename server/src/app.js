@@ -7,6 +7,9 @@ const morgan = require('morgan');
 const authRoutes = require('./routes/authRoutes');
 const { globalLimiter } = require('./middleware/rateLimiter');
 const roomRoutes = require('./routes/roomRoutes');
+const productRoutes = require('./routes/productRoutes');
+const voteRoutes = require('./routes/voteRoutes');
+const commentRoutes = require('./routes/commentRoutes');
 const app = express();
 
 app.use(helmet());
@@ -19,6 +22,9 @@ if (process.env.NODE_ENV === 'development') {
 
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/rooms', roomRoutes);
+app.use('/api/v1/rooms/:roomId/products', productRoutes);
+app.use('/api/v1/products/:id/vote', voteRoutes);
+app.use('/api/v1/products/:id/comments', commentRoutes);
 app.use('/api', globalLimiter);
 
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
