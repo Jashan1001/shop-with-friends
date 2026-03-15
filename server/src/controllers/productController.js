@@ -33,23 +33,26 @@ exports.getProducts = async (req, res, next) => {
       .populate('addedBy', 'name username')
       .sort({ createdAt: -1 })
 
-    // Get vote counts for each product
-    const productsWithVotes = await Promise.all(
-      products.map(async (product) => {
-        const votes = await Vote.find({ productId: product._id })
-        const upvotes = votes.filter((v) => v.value === 1).length
-        const downvotes = votes.filter((v) => v.value === -1).length
-        const userVote = votes.find(
-          (v) => v.userId.toString() === req.user.id
-        )
-        return {
-          ...product.toObject(),
-          upvotes,
-          downvotes,
-          userVote: userVote?.value || 0,
-        }
-      })
-    )
+    const productIds = products.map((p) => p._id)
+
+    // One query for all votes in this room feed.
+    const allVotes = await Vote.find({ productId: { $in: productIds } })
+
+    const productsWithVotes = products.map((product) => {
+      const votes = allVotes.filter(
+        (v) => v.productId.toString() === product._id.toString()
+      )
+      const upvotes = votes.filter((v) => v.value === 1).length
+      const downvotes = votes.filter((v) => v.value === -1).length
+      const userVote = votes.find((v) => v.userId.toString() === req.user.id)
+
+      return {
+        ...product.toObject(),
+        upvotes,
+        downvotes,
+        userVote: userVote?.value || 0,
+      }
+    })
 
     res.json({ success: true, products: productsWithVotes })
   } catch (err) {
