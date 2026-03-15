@@ -15,7 +15,10 @@ const app = express();
 
 app.use(helmet());
 app.use(cors({
-  origin: process.env.CLIENT_URL,
+  origin: [
+    'http://localhost:5173',
+    'https://cart-crew.vercel.app',
+  ],
   credentials: true,
 }));
 app.use(express.json());
