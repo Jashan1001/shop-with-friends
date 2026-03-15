@@ -5,6 +5,7 @@ import SignupPage from './pages/SignupPage'
 import DashboardPage from './pages/dashboard/DashboardPage'
 import JoinRoomPage from './pages/JoinRoomPage'
 import RoomPage from './pages/dashboard/RoomPage'
+import { useSocket } from './hooks/useSocket'
 
 // Protected route — redirects to /login if not authenticated
 const ProtectedRoute = ({ children }) => {
@@ -13,6 +14,8 @@ const ProtectedRoute = ({ children }) => {
 }
 
 function App() {
+  useSocket()
+
   return (
     <BrowserRouter>
       <Routes>

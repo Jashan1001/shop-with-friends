@@ -1,6 +1,7 @@
 const Product = require('../models/Product')
 const Vote = require('../models/Vote')
 const ApiError = require('../utils/apiError')
+const { getIO } = require('../socket/socketHandlers')
 
 // --- ADD PRODUCT ---
 exports.addProduct = async (req, res, next) => {
@@ -13,6 +14,9 @@ exports.addProduct = async (req, res, next) => {
     })
 
     await product.populate('addedBy', 'name username')
+
+    // Emit to everyone in the room
+    getIO().to(`room:${roomId}`).emit('product:added', product)
 
     res.status(201).json({ success: true, product })
   } catch (err) {
@@ -91,8 +95,11 @@ exports.deleteProduct = async (req, res, next) => {
       throw new ApiError(403, 'Not authorized to delete this product')
     }
 
+    const roomId = product.roomId.toString()
     await Product.findByIdAndDelete(req.params.id)
     await Vote.deleteMany({ productId: req.params.id })
+
+    getIO().to(`room:${roomId}`).emit('product:deleted', { productId: req.params.id })
 
     res.json({ success: true, message: 'Product deleted' })
   } catch (err) {
@@ -109,6 +116,8 @@ exports.updateStatus = async (req, res, next) => {
       { status },
       { new: true }
     ).populate('addedBy', 'name username')
+
+    getIO().to(`room:${product.roomId.toString()}`).emit('product:updated', product)
 
     res.json({ success: true, product })
   } catch (err) {

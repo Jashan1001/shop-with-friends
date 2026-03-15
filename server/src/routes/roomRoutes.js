@@ -9,7 +9,9 @@ const {
   deleteRoom,
   joinRoom,
   leaveRoom,
-  regenerateInvite, removeMember,
+  regenerateInvite,
+  removeMember,
+  previewRoom,
 } = require('../controllers/roomController')
 
 const { protect } = require('../middleware/authMiddleware')
@@ -22,6 +24,7 @@ router.use(protect)
 
 router.post('/', validate(createRoomSchema), createRoom)
 router.get('/', getRooms)
+router.get('/preview/:code', previewRoom)
 router.get('/:roomId', isMember, getRoom)
 router.put('/:roomId', isOwner, validate(updateRoomSchema), updateRoom)
 router.delete('/:roomId', isOwner, deleteRoom)

@@ -128,6 +128,23 @@ exports.joinRoom = async (req, res, next) => {
   }
 }
 
+// --- PREVIEW ROOM BY INVITE CODE ---
+exports.previewRoom = async (req, res, next) => {
+  try {
+    const room = await Room.findOne({
+      inviteCode: req.params.code.toUpperCase(),
+    })
+      .populate('members', 'name username')
+      .populate('createdBy', 'name username')
+
+    if (!room) throw new ApiError(404, 'Invalid invite code')
+
+    res.json({ success: true, room })
+  } catch (err) {
+    next(err)
+  }
+}
+
 // --- LEAVE ROOM ---
 exports.leaveRoom = async (req, res, next) => {
   try {

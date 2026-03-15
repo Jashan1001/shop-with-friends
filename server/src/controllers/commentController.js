@@ -1,7 +1,7 @@
 const Comment = require('../models/Comment')
 const Product = require('../models/Product')
 const ApiError = require('../utils/apiError')
-
+const { getIO } = require('../socket/socketHandlers')
 // --- ADD COMMENT ---
 exports.addComment = async (req, res, next) => {
   try {
@@ -17,6 +17,8 @@ exports.addComment = async (req, res, next) => {
     })
 
     await comment.populate('userId', 'name username')
+
+    getIO().to(`room:${product.roomId.toString()}`).emit('comment:added', comment)
 
     res.status(201).json({ success: true, comment })
   } catch (err) {
@@ -47,7 +49,16 @@ exports.deleteComment = async (req, res, next) => {
       throw new ApiError(403, 'You can only delete your own comments')
     }
 
+    const roomId = comment.roomId.toString()
+    const productId = comment.productId.toString()
+
     await Comment.findByIdAndDelete(req.params.commentId)
+
+    getIO().to(`room:${roomId}`).emit('comment:deleted', {
+      commentId: req.params.commentId,
+      productId,
+    })
+
     res.json({ success: true, message: 'Comment deleted' })
   } catch (err) {
     next(err)

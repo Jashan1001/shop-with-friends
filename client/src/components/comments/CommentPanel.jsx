@@ -21,11 +21,7 @@ export default function CommentPanel({ product }) {
     if (!text.trim() || loading) return
     setLoading(true)
     try {
-      const res = await addComment(product._id, text.trim())
-      queryClient.setQueryData(['comments', product._id], (old) => [
-        ...(old || []),
-        res.data.comment,
-      ])
+      await addComment(product._id, text.trim())
       setText('')
     } catch (err) {
       console.error(err)
@@ -36,7 +32,7 @@ export default function CommentPanel({ product }) {
 
   const handleDelete = async (commentId) => {
     try {
-      await deleteComment(commentId)
+      await deleteComment(product._id, commentId)
       queryClient.setQueryData(['comments', product._id], (old) =>
         old.filter((c) => c._id !== commentId)
       )

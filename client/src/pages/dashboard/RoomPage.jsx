@@ -11,9 +11,11 @@ import ProductCard from '../../components/products/ProductCard'
 import AddProductModal from '../../components/products/AddProductModal'
 import CommentPanel from '../../components/comments/CommentPanel'
 import { stagger, slideUp } from '../../animations/variants'
+import { useRoom } from '../../hooks/useRoom'
 
 export default function RoomPage() {
   const { roomId } = useParams()
+  useRoom(roomId)
   const navigate = useNavigate()
   const { user } = useAuthStore()
   const queryClient = useQueryClient()
@@ -44,10 +46,6 @@ export default function RoomPage() {
 
   const handleInviteRegenerated = (newCode) => {
     queryClient.setQueryData(['room', roomId], (old) => ({ ...old, inviteCode: newCode }))
-  }
-
-  const handleProductAdded = (newProduct) => {
-    queryClient.setQueryData(['products', roomId], (old) => [newProduct, ...(old || [])])
   }
 
   const handleVoteUpdate = (productId, voteData) => {
@@ -230,7 +228,7 @@ export default function RoomPage() {
         <AddProductModal
           roomId={roomId}
           onClose={() => setShowAddProduct(false)}
-          onAdded={handleProductAdded}
+          onAdded={() => {}}
         />
       )}
 
