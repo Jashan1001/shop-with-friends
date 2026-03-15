@@ -19,13 +19,19 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const original = error.config
+    const { refreshToken } = useAuthStore.getState()
 
-    // If 401 and we haven't already retried
-    if (error.response?.status === 401 && !original._retry) {
+    // Only attempt refresh if:
+    // 1. It's a 401
+    // 2. We haven't already retried this request
+    // 3. We actually have a refresh token (i.e. user was logged in)
+    // Without check #3, a failed login 401 would trigger a refresh with null,
+    // silently swallowing the error and redirecting instead of showing it.
+    if (error.response?.status === 401 && !original._retry && refreshToken) {
       original._retry = true
 
       try {
-        const { refreshToken, login, logout } = useAuthStore.getState()
+        const { login, logout } = useAuthStore.getState()
 
         const { data } = await axios.post(
           `${import.meta.env.VITE_API_URL}/auth/refresh`,
