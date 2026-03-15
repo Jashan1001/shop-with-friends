@@ -4,8 +4,32 @@ const Room = require('../models/Room')
 
 let io
 
+const allowedOrigins = [
+  'http://localhost:5173',
+  'https://cart-crew.vercel.app',
+  process.env.CLIENT_URL,
+  process.env.CORS_ORIGIN,
+  ...(process.env.CORS_ORIGINS || '')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean),
+]
+
+const cartCrewVercelPreviewRegex = /^https:\/\/cart-crew(?:-[a-z0-9-]+)*\.vercel\.app$/i
+
 const socketCorsOptions = {
-  origin: true,
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true)
+
+    const isAllowed =
+      allowedOrigins.includes(origin) ||
+      cartCrewVercelPreviewRegex.test(origin)
+
+    if (isAllowed) return callback(null, true)
+
+    console.warn(`Blocked Socket.IO CORS origin: ${origin}`)
+    return callback(new Error('Not allowed by CORS'))
+  },
   methods: ['GET', 'POST'],
   credentials: true,
 }

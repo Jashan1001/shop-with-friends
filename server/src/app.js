@@ -15,10 +15,35 @@ const app = express();
 
 app.set('trust proxy', 1);
 
+const allowedOrigins = [
+  'http://localhost:5173',
+  'https://cart-crew.vercel.app',
+  process.env.CLIENT_URL,
+  process.env.CORS_ORIGIN,
+  ...(process.env.CORS_ORIGINS || '')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean),
+];
+
+const cartCrewVercelPreviewRegex = /^https:\/\/cart-crew(?:-[a-z0-9-]+)*\.vercel\.app$/i;
+
 const corsOptions = {
-  origin: true,
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+
+    const isAllowed =
+      allowedOrigins.includes(origin) ||
+      cartCrewVercelPreviewRegex.test(origin);
+
+    if (isAllowed) return callback(null, true);
+
+    console.warn(`Blocked CORS origin: ${origin}`);
+    return callback(new Error('Not allowed by CORS'));
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
 };
 
 app.use(helmet());
