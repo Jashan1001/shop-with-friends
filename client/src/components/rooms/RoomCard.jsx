@@ -13,7 +13,7 @@ export default function RoomCard({ room }) {
   return (
     <motion.div
       variants={slideUp}
-      whileHover={{ x: -3, y: -3 }}
+      whileHover={{ x: -2, y: -2 }}
       onClick={() => navigate(`/room/${room._id}`)}
       className="bg-white border-[2.5px] border-black shadow-brut hover:shadow-brut-xl transition-shadow cursor-pointer p-5"
     >

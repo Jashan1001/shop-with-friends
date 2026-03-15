@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
@@ -29,9 +29,8 @@ export default function RoomPage() {
   const [selectedProduct, setSelectedProduct] = useState(null)
   const [sortBy, setSortBy] = useState('newest')
 
-  useRoom(roomId, (productId) => {
+  const handleNewProduct = useCallback((productId) => {
     setNewProductIds((prev) => new Set([...prev, productId]))
-
     setTimeout(() => {
       setNewProductIds((prev) => {
         const next = new Set(prev)
@@ -39,7 +38,9 @@ export default function RoomPage() {
         return next
       })
     }, 2000)
-  })
+  }, [])
+
+  useRoom(roomId, handleNewProduct)
 
   const { data: roomData, isLoading: roomLoading } = useQuery({
     queryKey: ['room', roomId],

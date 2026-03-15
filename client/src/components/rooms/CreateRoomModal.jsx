@@ -7,13 +7,12 @@ import { X } from 'lucide-react'
 import { createRoom } from '../../api/rooms.api'
 import errorMessage from '../../utils/errorMessage'
 import { scaleIn } from '../../animations/variants'
-import toast from 'react-hot-toast'
 import { ROOM_ICON_OPTIONS } from '../../utils/roomIcons'
+import toast from 'react-hot-toast'
 
 const schema = z.object({
   name: z.string().min(1, 'Room name is required').max(60),
   description: z.string().max(200).optional(),
-  emoji: z.string().optional(),
 })
 
 export default function CreateRoomModal({ onClose, onCreated }) {
@@ -23,7 +22,6 @@ export default function CreateRoomModal({ onClose, onCreated }) {
 
   const { register, handleSubmit, formState: { errors } } = useForm({
     resolver: zodResolver(schema),
-    defaultValues: { emoji: 'cart' },
   })
 
   const onSubmit = async (data) => {
@@ -35,9 +33,8 @@ export default function CreateRoomModal({ onClose, onCreated }) {
       onCreated(res.data.room)
       onClose()
     } catch (err) {
-      const message = errorMessage(err)
-      setServerError(message)
-      toast.error(message)
+      setServerError(errorMessage(err))
+      toast.error(errorMessage(err))
     } finally {
       setLoading(false)
     }
@@ -45,7 +42,6 @@ export default function CreateRoomModal({ onClose, onCreated }) {
 
   return (
     <AnimatePresence>
-      {/* Backdrop */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -53,8 +49,6 @@ export default function CreateRoomModal({ onClose, onCreated }) {
         onClick={onClose}
         className="fixed inset-0 bg-black/65 z-40"
       />
-
-      {/* Modal */}
       <motion.div
         variants={scaleIn}
         initial="hidden"
@@ -75,7 +69,6 @@ export default function CreateRoomModal({ onClose, onCreated }) {
             </button>
           </div>
 
-          {/* Body */}
           <form onSubmit={handleSubmit(onSubmit)} className="p-5">
 
             {serverError && (
@@ -87,26 +80,25 @@ export default function CreateRoomModal({ onClose, onCreated }) {
             {/* Icon picker */}
             <div className="mb-5">
               <label className="font-mono text-[11px] font-bold uppercase tracking-widest block mb-2">
-                Pick an icon
+                Room Type
               </label>
-              <div className="flex gap-2 flex-wrap">
+              <div className="grid grid-cols-5 gap-2">
                 {ROOM_ICON_OPTIONS.map((option) => {
                   const Icon = option.icon
-
                   return (
-                  <button
-                    key={option.value}
-                    type="button"
-                    onClick={() => setSelectedIcon(option.value)}
-                    className={`w-10 h-10 flex items-center justify-center border-[2.5px] border-black transition-all
-                      ${selectedIcon === option.value
-                        ? 'bg-yellow shadow-brut'
-                        : 'bg-white hover:bg-cream'
-                      }`}
-                    title={option.label}
-                  >
-                    <Icon size={18} />
-                  </button>
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => setSelectedIcon(option.value)}
+                      className={`flex flex-col items-center gap-1 p-2.5 border-[2.5px] border-black transition-all
+                        ${selectedIcon === option.value
+                          ? 'bg-yellow shadow-brut'
+                          : 'bg-white hover:bg-cream'
+                        }`}
+                    >
+                      <Icon size={18} className="text-black" />
+                      <span className="font-mono text-[9px] uppercase">{option.label}</span>
+                    </button>
                   )
                 })}
               </div>
