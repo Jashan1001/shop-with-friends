@@ -4,6 +4,7 @@ import LoginPage from './pages/LoginPage'
 import SignupPage from './pages/SignupPage'
 import DashboardPage from './pages/dashboard/DashboardPage'
 import JoinRoomPage from './pages/JoinRoomPage'
+import RoomPage from './pages/dashboard/RoomPage'
 
 // Protected route — redirects to /login if not authenticated
 const ProtectedRoute = ({ children }) => {
@@ -26,6 +27,10 @@ function App() {
           }
         />
         <Route path="/join/:code" element={<ProtectedRoute><JoinRoomPage /></ProtectedRoute>} />
+        <Route
+          path="/room/:roomId"
+          element={<ProtectedRoute><RoomPage /></ProtectedRoute>}
+        />
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </BrowserRouter>
