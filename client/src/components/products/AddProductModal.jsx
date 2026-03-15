@@ -1,20 +1,22 @@
 import { useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { motion, AnimatePresence } from 'framer-motion'
 import { X } from 'lucide-react'
 import { addProduct } from '../../api/products.api'
 import errorMessage from '../../utils/errorMessage'
 import { scaleIn } from '../../animations/variants'
 
 const schema = z.object({
-  title: z.string().min(1, 'Product title is required').max(200),
+  title: z.string().min(1, 'Title is required').max(200),
   price: z.string().optional(),
-  link: z.string().url('Must be a valid URL').optional().or(z.literal('')),
-  platform: z.enum(['amazon', 'flipkart', 'myntra', 'other']).optional(),
-  description: z.string().max(500).optional(),
+  link: z.string().optional().default(''),
+  platform: z.enum(['amazon', 'flipkart', 'myntra', 'other']).default('other'),
+  description: z.string().max(500).optional().default(''),
 })
+
+const PLATFORMS = ['amazon', 'flipkart', 'myntra', 'other']
 
 export default function AddProductModal({ roomId, onClose, onAdded }) {
   const [loading, setLoading] = useState(false)
@@ -22,6 +24,7 @@ export default function AddProductModal({ roomId, onClose, onAdded }) {
 
   const { register, handleSubmit, formState: { errors } } = useForm({
     resolver: zodResolver(schema),
+    defaultValues: { platform: 'other' },
   })
 
   const onSubmit = async (data) => {
@@ -51,7 +54,6 @@ export default function AddProductModal({ roomId, onClose, onAdded }) {
         onClick={onClose}
         className="fixed inset-0 bg-black/65 z-40"
       />
-
       <motion.div
         variants={scaleIn}
         initial="hidden"
@@ -61,6 +63,7 @@ export default function AddProductModal({ roomId, onClose, onAdded }) {
       >
         <div className="bg-white border-[2.5px] border-black shadow-brut-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
 
+          {/* Header */}
           <div className="flex items-center justify-between p-5 border-b-[2.5px] border-black sticky top-0 bg-white">
             <h2 className="font-display text-xl font-bold">Add Product</h2>
             <button
@@ -71,22 +74,39 @@ export default function AddProductModal({ roomId, onClose, onAdded }) {
             </button>
           </div>
 
-          <form onSubmit={handleSubmit(onSubmit)} className="p-5 space-y-4">
+          <form onSubmit={handleSubmit(onSubmit)} className="p-5">
 
             {serverError && (
-              <div className="bg-coral text-white font-body text-sm p-3 border-[2.5px] border-black">
+              <div className="bg-coral text-white font-body text-sm p-3 mb-4 border-[2.5px] border-black">
                 {serverError}
               </div>
             )}
 
+            {/* Platform */}
+            <div className="mb-4">
+              <label className="font-mono text-[11px] font-bold uppercase tracking-widest block mb-2">
+                Platform
+              </label>
+              <div className="flex gap-2 flex-wrap">
+                {PLATFORMS.map((p) => (
+                  <label key={p} className="cursor-pointer">
+                    <input {...register('platform')} type="radio" value={p} className="sr-only" />
+                    <span className="font-mono text-xs uppercase border-[2.5px] border-black px-3 py-1.5 block hover:bg-cream transition-colors has-[:checked]:bg-yellow has-[:checked]:font-bold">
+                      {p}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
             {/* Title */}
-            <div>
+            <div className="mb-4">
               <label className="font-mono text-[11px] font-bold uppercase tracking-widest block mb-1.5">
-                Product Title *
+                Product Title
               </label>
               <input
                 {...register('title')}
-                placeholder="Sony WH-1000XM5 Headphones"
+                placeholder="MacBook Air M2"
                 className="w-full border-[2.5px] border-black bg-white font-body text-sm px-3 py-2.5 outline-none focus:shadow-brut transition-shadow"
               />
               {errors.title && (
@@ -95,58 +115,38 @@ export default function AddProductModal({ roomId, onClose, onAdded }) {
             </div>
 
             {/* Price */}
-            <div>
+            <div className="mb-4">
               <label className="font-mono text-[11px] font-bold uppercase tracking-widest block mb-1.5">
                 Price (₹)
               </label>
               <input
                 {...register('price')}
                 type="number"
-                placeholder="29990"
+                placeholder="114900"
                 className="w-full border-[2.5px] border-black bg-white font-body text-sm px-3 py-2.5 outline-none focus:shadow-brut transition-shadow"
               />
             </div>
 
-            {/* Platform */}
-            <div>
-              <label className="font-mono text-[11px] font-bold uppercase tracking-widest block mb-1.5">
-                Platform
-              </label>
-              <select
-                {...register('platform')}
-                className="w-full border-[2.5px] border-black bg-white font-body text-sm px-3 py-2.5 outline-none focus:shadow-brut transition-shadow"
-              >
-                <option value="">Select platform</option>
-                <option value="amazon">Amazon</option>
-                <option value="flipkart">Flipkart</option>
-                <option value="myntra">Myntra</option>
-                <option value="other">Other</option>
-              </select>
-            </div>
-
             {/* Link */}
-            <div>
+            <div className="mb-4">
               <label className="font-mono text-[11px] font-bold uppercase tracking-widest block mb-1.5">
-                Product Link
+                Product Link (optional)
               </label>
               <input
                 {...register('link')}
                 placeholder="https://amazon.in/..."
                 className="w-full border-[2.5px] border-black bg-white font-body text-sm px-3 py-2.5 outline-none focus:shadow-brut transition-shadow"
               />
-              {errors.link && (
-                <p className="font-mono text-[11px] text-coral uppercase mt-1">{errors.link.message}</p>
-              )}
             </div>
 
             {/* Description */}
-            <div>
+            <div className="mb-6">
               <label className="font-mono text-[11px] font-bold uppercase tracking-widest block mb-1.5">
                 Notes (optional)
               </label>
               <textarea
                 {...register('description')}
-                placeholder="Why you want this..."
+                placeholder="Why this product?"
                 rows={2}
                 className="w-full border-[2.5px] border-black bg-white font-body text-sm px-3 py-2.5 outline-none focus:shadow-brut transition-shadow resize-none"
               />

@@ -1,5 +1,5 @@
 const formatPrice = (price, currency = 'INR') => {
-  if (!price && price !== 0) return null
+  if (!price && price !== 0) return 'Price not listed'
   return new Intl.NumberFormat('en-IN', {
     style: 'currency',
     currency,
