@@ -4,26 +4,8 @@ const Room = require('../models/Room')
 
 let io
 
-const allowedOrigins = [
-  'http://localhost:5173',
-  'https://cart-crew.vercel.app',
-  process.env.CLIENT_URL,
-  process.env.CORS_ORIGIN,
-].filter(Boolean)
-
 const socketCorsOptions = {
-  origin: (origin, callback) => {
-    if (!origin) return callback(null, true)
-
-    const isAllowed =
-      allowedOrigins.includes(origin) ||
-      /^https:\/\/.*\.vercel\.app$/.test(origin)
-
-    if (isAllowed) return callback(null, true)
-
-    console.warn(`Blocked Socket.IO CORS origin: ${origin}`)
-    return callback(new Error('Not allowed by CORS'))
-  },
+  origin: true,
   methods: ['GET', 'POST'],
   credentials: true,
 }
