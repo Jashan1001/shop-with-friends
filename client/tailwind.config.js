@@ -17,6 +17,8 @@ export default {
         purple: '#7B2FBE',
         black: '#0A0A0A',
         muted: '#6B7280',
+        'bought-bg': '#F0FFF0',
+        'skipped-bg': '#FFF0F0',
       },
       boxShadow: {
         brut: '4px 4px 0 #0A0A0A',

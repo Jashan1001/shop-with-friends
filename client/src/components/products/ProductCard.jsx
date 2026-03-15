@@ -10,8 +10,8 @@ import toast from 'react-hot-toast'
 
 const STATUS_STYLES = {
   active:  { border: 'border-black', shadow: 'shadow-brut', bg: '' },
-  bought:  { border: 'border-lime',  shadow: 'shadow-[6px_6px_0_#C6FF00]', bg: 'bg-[#F0FFF0]' },
-  skipped: { border: 'border-coral', shadow: 'shadow-coral', bg: 'bg-[#FFF0F0]' },
+  bought:  { border: 'border-lime',  shadow: 'shadow-[6px_6px_0_#C6FF00]', bg: 'bg-bought-bg' },
+  skipped: { border: 'border-coral', shadow: 'shadow-coral', bg: 'bg-skipped-bg' },
 }
 
 const PLATFORM_BADGE = {
@@ -21,7 +21,7 @@ const PLATFORM_BADGE = {
   other:    { bg: 'bg-cream',  text: 'text-black', label: 'Other' },
 }
 
-export default function ProductCard({ product, onClick, onVoteUpdate, onDelete, onStatusUpdate, isRoomOwner }) {
+export default function ProductCard({ product, onClick, onVoteUpdate, onDelete, onStatusUpdate, isRoomOwner, isNew }) {
   const { user } = useAuthStore()
   const isProductOwner = product.addedBy?._id === user?.id
   const style = STATUS_STYLES[product.status] || STATUS_STYLES.active
@@ -52,9 +52,9 @@ export default function ProductCard({ product, onClick, onVoteUpdate, onDelete, 
   return (
     <motion.div
       variants={slideUp}
-      whileHover={{ x: -3, y: -3 }}
+      whileHover={{ x: -2, y: -2 }}
       onClick={() => onClick(product)}
-      className={`bg-white border-[2.5px] ${style.border} ${style.shadow} ${style.bg} cursor-pointer transition-shadow hover:shadow-brut-xl`}
+      className={`bg-white border-[2.5px] ${isNew ? 'border-blue shadow-blue' : `${style.border} ${style.shadow}`} ${style.bg} cursor-pointer transition-all duration-300`}
     >
       {/* Image area */}
       {product.image ? (

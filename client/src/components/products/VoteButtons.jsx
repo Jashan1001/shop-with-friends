@@ -44,6 +44,7 @@ export default function VoteButtons({ product, onVoteUpdate }) {
     <div className="flex items-center gap-1">
       {/* Upvote */}
       <motion.button
+        whileHover={{ x: -2, y: -2 }}
         whileTap={{ scale: 0.9 }}
         onClick={() => handleVote(1)}
         disabled={loading}
@@ -66,6 +67,7 @@ export default function VoteButtons({ product, onVoteUpdate }) {
 
       {/* Downvote */}
       <motion.button
+        whileHover={{ x: -2, y: -2 }}
         whileTap={{ scale: 0.9 }}
         onClick={() => handleVote(-1)}
         disabled={loading}

@@ -64,3 +64,23 @@ exports.deleteComment = async (req, res, next) => {
     next(err)
   }
 }
+
+// --- EDIT COMMENT ---
+exports.editComment = async (req, res, next) => {
+  try {
+    const comment = await Comment.findById(req.params.commentId)
+    if (!comment) throw new ApiError(404, 'Comment not found')
+
+    if (comment.userId.toString() !== req.user.id) {
+      throw new ApiError(403, 'You can only edit your own comments')
+    }
+
+    comment.text = req.body.text
+    comment.edited = true
+    await comment.save()
+
+    res.json({ success: true, comment })
+  } catch (err) {
+    next(err)
+  }
+}

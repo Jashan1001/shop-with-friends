@@ -2,6 +2,7 @@ const Room = require('../models/Room')
 const User = require('../models/User')
 const ApiError = require('../utils/apiError')
 const generateInviteCode = require('../utils/generateInviteCode')
+const { getIO } = require('../socket/socketHandlers')
 
 // --- CREATE ROOM ---
 exports.createRoom = async (req, res, next) => {
@@ -74,6 +75,11 @@ exports.updateRoom = async (req, res, next) => {
 // --- DELETE ROOM ---
 exports.deleteRoom = async (req, res, next) => {
   try {
+    // Notify all connected members before deleting the room.
+    getIO().to(`room:${req.params.roomId}`).emit('room:deleted', {
+      roomId: req.params.roomId,
+    })
+
     await Room.findByIdAndDelete(req.params.roomId)
 
     // Remove room from all members' rooms arrays
@@ -120,6 +126,10 @@ exports.joinRoom = async (req, res, next) => {
     // Add room to user's rooms array
     await User.findByIdAndUpdate(req.user.id, {
       $push: { rooms: room._id },
+    })
+
+    getIO().to(`room:${room._id.toString()}`).emit('member:joined', {
+      userId: req.user.id,
     })
 
     res.json({ success: true, room })
@@ -201,6 +211,11 @@ exports.removeMember = async (req, res, next) => {
 
     await User.findByIdAndUpdate(userId, {
       $pull: { rooms: room._id },
+    })
+
+    getIO().to(`room:${room._id.toString()}`).emit('member:removed', {
+      roomId: room._id.toString(),
+      userId,
     })
 
     res.json({ success: true, message: 'Member removed' })

@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useSocketStore } from '../store/socketStore'
 
-export const useRoom = (roomId) => {
+export const useRoom = (roomId, onNewProduct) => {
   const socket = useSocketStore((s) => s.socket)
   const queryClient = useQueryClient()
 
@@ -18,6 +18,9 @@ export const useRoom = (roomId) => {
         if (exists) return old
         return [product, ...(old || [])]
       })
+
+      // Trigger pulse on newly added cards.
+      if (onNewProduct) onNewProduct(product._id)
     })
 
     // Product updated (status change etc)
@@ -64,11 +67,20 @@ export const useRoom = (roomId) => {
       queryClient.invalidateQueries(['room', roomId])
     })
 
+    socket.on('room:deleted', ({ roomId: deletedRoomId }) => {
+      window.location.href = '/dashboard'
+    })
+
+    socket.on('member:removed', ({ roomId: removedFromRoom, userId: removedUserId }) => {
+      window.location.href = '/dashboard'
+    })
+
     return () => {
       socket.emit('leave:room', roomId)
       ;['product:added', 'product:updated', 'product:deleted',
-        'vote:updated', 'comment:added', 'comment:deleted', 'member:joined'
+        'vote:updated', 'comment:added', 'comment:deleted',
+        'member:joined', 'room:deleted', 'member:removed'
       ].forEach((e) => socket.off(e))
     }
-  }, [socket, roomId])
+  }, [socket, roomId, onNewProduct])
 }

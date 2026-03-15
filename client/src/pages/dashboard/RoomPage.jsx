@@ -20,13 +20,25 @@ export default function RoomPage() {
   const navigate = useNavigate()
   const { user } = useAuthStore()
   const queryClient = useQueryClient()
-  useRoom(roomId)
 
   const [showInvite, setShowInvite] = useState(false)
   const [showAddProduct, setShowAddProduct] = useState(false)
   const [showMenu, setShowMenu] = useState(false)
+  const [newProductIds, setNewProductIds] = useState(new Set())
   const [selectedProduct, setSelectedProduct] = useState(null)
   const [sortBy, setSortBy] = useState('newest')
+
+  useRoom(roomId, (productId) => {
+    setNewProductIds((prev) => new Set([...prev, productId]))
+
+    setTimeout(() => {
+      setNewProductIds((prev) => {
+        const next = new Set(prev)
+        next.delete(productId)
+        return next
+      })
+    }, 2000)
+  })
 
   const { data: roomData, isLoading: roomLoading } = useQuery({
     queryKey: ['room', roomId],
@@ -314,6 +326,7 @@ export default function RoomPage() {
                     onDelete={handleProductDeleted}
                     onStatusUpdate={handleStatusUpdate}
                     isRoomOwner={isOwner}
+                    isNew={newProductIds.has(product._id)}
                   />
                 ))}
               </motion.div>

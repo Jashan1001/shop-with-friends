@@ -45,7 +45,6 @@ const roomSchema = new Schema(
   { timestamps: true }
 )
 
-roomSchema.index({ inviteCode: 1 })
 roomSchema.index({ createdBy: 1 })
 
 module.exports = mongoose.model('Room', roomSchema)
