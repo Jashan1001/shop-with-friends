@@ -59,7 +59,7 @@ export default function SignupPage() {
       <div className="hidden lg:flex w-1/2 bg-black flex-col justify-between p-12">
         <div>
           <span className="font-display text-2xl font-bold text-yellow">
-            ShopFriends
+            CartCrew
           </span>
         </div>
         <div>
@@ -71,7 +71,7 @@ export default function SignupPage() {
           </p>
         </div>
         <div className="font-mono text-white/30 text-xs">
-          SHOP WITH FRIENDS © 2025
+          CARTCREW © 2025
         </div>
       </div>
 
@@ -85,7 +85,7 @@ export default function SignupPage() {
         >
           {/* Mobile logo */}
           <motion.div variants={slideUp} className="lg:hidden mb-8">
-            <span className="font-display text-2xl font-bold">ShopFriends</span>
+            <span className="font-display text-2xl font-bold">CartCrew</span>
           </motion.div>
 
           <motion.h2 variants={slideUp} className="font-display text-3xl font-bold mb-2">

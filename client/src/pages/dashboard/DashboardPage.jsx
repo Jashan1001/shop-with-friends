@@ -1,21 +1,22 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
-import { Plus, LogOut } from 'lucide-react'
+import { Plus, LogOut, Zap } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import { getRooms } from '../../api/rooms.api'
 import { logout } from '../../api/auth.api'
 import { useAuthStore } from '../../store/authStore'
 import RoomCard from '../../components/rooms/RoomCard'
 import CreateRoomModal from '../../components/rooms/CreateRoomModal'
-import { stagger, slideUp } from '../../animations/variants'
 import { RoomCardSkeleton } from '../../components/ui/Skeleton'
+import { stagger, slideUp } from '../../animations/variants'
+import toast from 'react-hot-toast'
 
 export default function DashboardPage() {
   const [showCreateModal, setShowCreateModal] = useState(false)
-  const navigate = useNavigate()
   const { user, logout: storeLogout } = useAuthStore()
   const queryClient = useQueryClient()
+  const navigate = useNavigate()
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['rooms'],
@@ -23,37 +24,45 @@ export default function DashboardPage() {
   })
 
   const handleLogout = async () => {
-    try {
-      await logout()
-    } finally {
+    try { await logout() } finally {
       storeLogout()
       window.location.href = '/login'
     }
   }
 
   const handleRoomCreated = (newRoom) => {
-    // Add new room to cache without refetching
     queryClient.setQueryData(['rooms'], (old) => [newRoom, ...(old || [])])
+    toast.success('Room created!')
   }
 
   return (
     <div className="min-h-screen bg-cream">
 
-      {/* Top navbar */}
-      <div className="border-b-[2.5px] border-black bg-white px-8 py-4 flex items-center justify-between">
-        <span className="font-display text-xl font-bold">ShopFriends</span>
-        <div className="flex items-center gap-4">
-          <span
+      {/* Black navbar */}
+      <div className="bg-black border-b-[2.5px] border-black px-8 py-4 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 bg-yellow border-[2px] border-yellow/50 flex items-center justify-center">
+            <span className="font-display text-sm font-black text-black">C</span>
+          </div>
+          <span className="font-display text-xl font-bold text-white">CartCrew</span>
+        </div>
+        <div className="flex items-center gap-3">
+          <button
             onClick={() => navigate('/profile')}
-            className="font-mono text-sm text-muted cursor-pointer hover:text-black transition-colors underline"
+            className="flex items-center gap-2 font-mono text-xs text-white/60 hover:text-white transition-colors"
           >
+            <div className="w-7 h-7 bg-yellow border-[2px] border-yellow/50 flex items-center justify-center">
+              <span className="font-mono text-[10px] font-bold text-black">
+                {user?.name?.charAt(0).toUpperCase()}
+              </span>
+            </div>
             @{user?.username}
-          </span>
+          </button>
           <button
             onClick={handleLogout}
-            className="flex items-center gap-2 font-body text-sm border-[2.5px] border-black px-3 py-1.5 hover:bg-coral hover:text-white hover:border-coral transition-colors shadow-brut"
+            className="flex items-center gap-2 font-body text-sm border-[2.5px] border-white/20 text-white/70 px-3 py-1.5 hover:bg-coral hover:text-white hover:border-coral transition-colors"
           >
-            <LogOut size={14} />
+            <LogOut size={13} />
             Logout
           </button>
         </div>
@@ -64,10 +73,9 @@ export default function DashboardPage() {
         {/* Page header */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="font-display text-4xl font-bold">
-              Your Rooms
-            </h1>
-            <p className="font-body text-muted mt-1">
+            <h1 className="font-display text-4xl font-bold">Your Rooms</h1>
+            <p className="font-body text-muted mt-1 flex items-center gap-2">
+              <Zap size={13} className="text-yellow" />
               {data?.length || 0} room{data?.length !== 1 ? 's' : ''}
             </p>
           </div>
@@ -80,31 +88,28 @@ export default function DashboardPage() {
           </button>
         </div>
 
-        {/* Loading */}
         {isLoading && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[...Array(3)].map((_, i) => (
-              <RoomCardSkeleton key={i} />
-            ))}
+            {[...Array(3)].map((_, i) => <RoomCardSkeleton key={i} />)}
           </div>
         )}
 
-        {/* Error */}
         {isError && (
           <div className="font-mono text-sm text-coral">Failed to load rooms.</div>
         )}
 
-        {/* Empty state */}
         {!isLoading && data?.length === 0 && (
           <motion.div
             variants={slideUp}
             initial="hidden"
             animate="visible"
-            className="border-[2.5px] border-black border-dashed p-16 text-center"
+            className="border-[2.5px] border-black bg-white shadow-brut p-16 text-center"
           >
-            <div className="text-5xl mb-4">🛒</div>
+            <div className="w-16 h-16 bg-yellow border-[2.5px] border-black mx-auto flex items-center justify-center mb-6 text-3xl">
+              🛒
+            </div>
             <h2 className="font-display text-2xl font-bold mb-2">No rooms yet</h2>
-            <p className="font-body text-muted mb-6">
+            <p className="font-body text-muted mb-6 max-w-sm mx-auto">
               Create your first room and invite friends to shop together.
             </p>
             <button
@@ -116,7 +121,6 @@ export default function DashboardPage() {
           </motion.div>
         )}
 
-        {/* Room grid */}
         {!isLoading && data?.length > 0 && (
           <motion.div
             variants={stagger}
@@ -131,7 +135,6 @@ export default function DashboardPage() {
         )}
       </div>
 
-      {/* Create room modal */}
       {showCreateModal && (
         <CreateRoomModal
           onClose={() => setShowCreateModal(false)}

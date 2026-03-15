@@ -1,4 +1,4 @@
-# Shop With Friends — Learnings
+# CartCrew — Learnings
 
 ## Phase 1 — Foundation
 

@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Shop With Friends — Design Tokens */
+/* CartCrew — Design Tokens */
 :root {
   --color-bg: #FFFEF0;
   --color-surface: #FFFFFF;
