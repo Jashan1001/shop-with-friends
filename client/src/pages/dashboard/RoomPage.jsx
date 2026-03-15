@@ -12,6 +12,7 @@ import AddProductModal from '../../components/products/AddProductModal'
 import CommentPanel from '../../components/comments/CommentPanel'
 import { stagger, slideUp } from '../../animations/variants'
 import { useRoom } from '../../hooks/useRoom'
+import { ProductCardSkeleton } from '../../components/ui/Skeleton'
 
 export default function RoomPage() {
   const { roomId } = useParams()
@@ -159,7 +160,11 @@ export default function RoomPage() {
 
           <div className="flex-1 overflow-y-auto p-6">
             {productsLoading && (
-              <span className="font-mono text-sm text-muted">Loading products...</span>
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+                {[...Array(3)].map((_, i) => (
+                  <ProductCardSkeleton key={i} />
+                ))}
+              </div>
             )}
             {!productsLoading && sortedProducts.length === 0 && (
               <motion.div

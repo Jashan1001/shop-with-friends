@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { X, Copy, Check, RefreshCw } from 'lucide-react'
 import { regenerateInvite } from '../../api/rooms.api'
 import { scaleIn } from '../../animations/variants'
+import toast from 'react-hot-toast'
 
 export default function InviteModal({ room, onClose, onRegenerated }) {
   const [copied, setCopied] = useState(false)
@@ -12,6 +13,7 @@ export default function InviteModal({ room, onClose, onRegenerated }) {
 
   const handleCopy = () => {
     navigator.clipboard.writeText(inviteLink)
+    toast.success('Invite link copied!')
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }

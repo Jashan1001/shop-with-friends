@@ -7,6 +7,7 @@ import { X } from 'lucide-react'
 import { createRoom } from '../../api/rooms.api'
 import errorMessage from '../../utils/errorMessage'
 import { scaleIn } from '../../animations/variants'
+import toast from 'react-hot-toast'
 
 const EMOJIS = ['🛒', '💻', '👟', '📱', '🏠', '👗', '🎮', '📚', '🍕', '✈️']
 
@@ -31,10 +32,13 @@ export default function CreateRoomModal({ onClose, onCreated }) {
     setServerError('')
     try {
       const res = await createRoom({ ...data, emoji: selectedEmoji })
+      toast.success('Room created!')
       onCreated(res.data.room)
       onClose()
     } catch (err) {
-      setServerError(errorMessage(err))
+      const message = errorMessage(err)
+      setServerError(message)
+      toast.error(message)
     } finally {
       setLoading(false)
     }

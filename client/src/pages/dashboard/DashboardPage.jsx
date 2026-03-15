@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import { Plus, LogOut } from 'lucide-react'
@@ -8,9 +9,11 @@ import { useAuthStore } from '../../store/authStore'
 import RoomCard from '../../components/rooms/RoomCard'
 import CreateRoomModal from '../../components/rooms/CreateRoomModal'
 import { stagger, slideUp } from '../../animations/variants'
+import { RoomCardSkeleton } from '../../components/ui/Skeleton'
 
 export default function DashboardPage() {
   const [showCreateModal, setShowCreateModal] = useState(false)
+  const navigate = useNavigate()
   const { user, logout: storeLogout } = useAuthStore()
   const queryClient = useQueryClient()
 
@@ -40,7 +43,12 @@ export default function DashboardPage() {
       <div className="border-b-[2.5px] border-black bg-white px-8 py-4 flex items-center justify-between">
         <span className="font-display text-xl font-bold">ShopFriends</span>
         <div className="flex items-center gap-4">
-          <span className="font-mono text-sm text-muted">@{user?.username}</span>
+          <span
+            onClick={() => navigate('/profile')}
+            className="font-mono text-sm text-muted cursor-pointer hover:text-black transition-colors underline"
+          >
+            @{user?.username}
+          </span>
           <button
             onClick={handleLogout}
             className="flex items-center gap-2 font-body text-sm border-[2.5px] border-black px-3 py-1.5 hover:bg-coral hover:text-white hover:border-coral transition-colors shadow-brut"
@@ -74,7 +82,11 @@ export default function DashboardPage() {
 
         {/* Loading */}
         {isLoading && (
-          <div className="font-mono text-sm text-muted">Loading rooms...</div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[...Array(3)].map((_, i) => (
+              <RoomCardSkeleton key={i} />
+            ))}
+          </div>
         )}
 
         {/* Error */}

@@ -7,6 +7,7 @@ import { X } from 'lucide-react'
 import { addProduct } from '../../api/products.api'
 import errorMessage from '../../utils/errorMessage'
 import { scaleIn } from '../../animations/variants'
+import toast from 'react-hot-toast'
 
 const schema = z.object({
   title: z.string().min(1, 'Title is required').max(200),
@@ -36,10 +37,13 @@ export default function AddProductModal({ roomId, onClose, onAdded }) {
         price: data.price ? parseFloat(data.price) : undefined,
       }
       const res = await addProduct(roomId, payload)
+      toast.success('Product added!')
       onAdded(res.data.product)
       onClose()
     } catch (err) {
-      setServerError(errorMessage(err))
+      const message = errorMessage(err)
+      setServerError(message)
+      toast.error(message)
     } finally {
       setLoading(false)
     }

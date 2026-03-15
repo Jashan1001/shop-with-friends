@@ -10,6 +10,7 @@ const roomRoutes = require('./routes/roomRoutes');
 const productRoutes = require('./routes/productRoutes');
 const voteRoutes = require('./routes/voteRoutes');
 const commentRoutes = require('./routes/commentRoutes');
+const userRoutes = require('./routes/userRoutes');
 const app = express();
 
 app.use(helmet());
@@ -25,6 +26,7 @@ app.use('/api/v1/rooms', roomRoutes);
 app.use('/api/v1/rooms/:roomId/products', productRoutes);
 app.use('/api/v1/products/:id/vote', voteRoutes);
 app.use('/api/v1/products/:id/comments', commentRoutes);
+app.use('/api/v1/users', userRoutes);
 app.use('/api', globalLimiter);
 
 app.get('/health', (req, res) => res.json({ status: 'ok' }));

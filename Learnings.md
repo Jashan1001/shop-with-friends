@@ -61,3 +61,19 @@ Node projects use CommonJS (require/module.exports).
 Using module.exports in a Vite config file throws
 "module is not defined". Always check which module
 system a config file expects before writing it.
+
+### Socket.io needs the raw HTTP server, not Express app
+http.createServer(app) gives you the server explicitly.
+app.listen() creates it internally and hides it.
+Socket.io needs the raw server to attach to.
+
+### REST first, then socket emit — always
+Never emit a socket event without saving to DB first.
+If the emit happens before save and the save fails,
+users see data that doesn't exist. Save → emit → respond.
+
+### Deduplicate socket + REST cache updates
+When YOU add a product, both the REST response and the
+socket event fire. Without a duplicate check in the socket
+handler, the product appears twice. Always check if the
+item already exists before adding to cache.

@@ -5,7 +5,9 @@ import SignupPage from './pages/SignupPage'
 import DashboardPage from './pages/dashboard/DashboardPage'
 import JoinRoomPage from './pages/JoinRoomPage'
 import RoomPage from './pages/dashboard/RoomPage'
+import LandingPage from './pages/LandingPage'
 import { useSocket } from './hooks/useSocket'
+import ProfilePage from './pages/ProfilePage'
 
 // Protected route — redirects to /login if not authenticated
 const ProtectedRoute = ({ children }) => {
@@ -21,6 +23,7 @@ function App() {
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
+        <Route path="/landing" element={<LandingPage />} />
         <Route
           path="/dashboard"
           element={
@@ -34,7 +37,8 @@ function App() {
           path="/room/:roomId"
           element={<ProtectedRoute><RoomPage /></ProtectedRoute>}
         />
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+        <Route path="/" element={<Navigate to="/landing" replace />} />
       </Routes>
     </BrowserRouter>
   )
