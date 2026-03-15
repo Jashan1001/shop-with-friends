@@ -53,7 +53,7 @@ export default function DashboardPage() {
           >
             <div className="w-7 h-7 bg-yellow border-[2px] border-yellow/50 flex items-center justify-center">
               <span className="font-mono text-[10px] font-bold text-black">
-                {user?.name?.charAt(0).toUpperCase()}
+                {user?.name?.charAt(0)?.toUpperCase() || '?'}
               </span>
             </div>
             @{user?.username}

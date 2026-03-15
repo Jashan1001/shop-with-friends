@@ -94,7 +94,7 @@ export default function ProfilePage() {
             className="w-20 h-20 bg-yellow border-[2.5px] border-black shadow-brut flex items-center justify-center"
           >
             <span className="font-display text-3xl font-black">
-              {user?.name?.charAt(0).toUpperCase()}
+                {user?.name?.charAt(0)?.toUpperCase() || '?'}
             </span>
           </motion.div>
           <motion.div variants={slideUp}>

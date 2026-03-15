@@ -1,21 +1,16 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { io } from 'socket.io-client'
 import { useAuthStore } from '../store/authStore'
 import { useSocketStore } from '../store/socketStore'
 
 export const useSocket = () => {
   const accessToken = useAuthStore((s) => s.accessToken)
-  const { socket, setSocket } = useSocketStore()
+  const { setSocket } = useSocketStore()
+  const socketRef = useRef(null)
 
   useEffect(() => {
     if (!accessToken) return
-    if (socket?.connected) return
-
-    // Disconnect any existing stale socket instance before reconnecting
-    if (socket) {
-      socket.disconnect()
-      setSocket(null)
-    }
+    if (socketRef.current?.connected) return
 
     const s = io(import.meta.env.VITE_SOCKET_URL, {
       auth: { token: accessToken },
@@ -27,17 +22,23 @@ export const useSocket = () => {
 
     s.on('connect', () => {
       console.log('Socket connected:', s.id)
+      setSocket(s)
     })
-    s.on('connect_error', (err) => console.error('Socket error:', err.message))
+
+    s.on('connect_error', (err) => {
+      console.error('Socket error:', err.message)
+    })
+
     s.on('disconnect', (reason) => {
       console.log('Socket disconnected:', reason)
     })
 
-    setSocket(s)
+    socketRef.current = s
 
     return () => {
       s.disconnect()
+      socketRef.current = null
       setSocket(null)
     }
-  }, [accessToken, socket, setSocket])
+  }, [accessToken])
 }
