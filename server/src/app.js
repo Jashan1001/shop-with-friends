@@ -15,14 +15,35 @@ const app = express();
 
 app.set('trust proxy', 1);
 
-app.use(helmet());
-app.use(cors({
-  origin: [
-    'http://localhost:5173',
-    'https://cart-crew.vercel.app',
-  ],
+const allowedOrigins = [
+  'http://localhost:5173',
+  'https://cart-crew.vercel.app',
+  process.env.CLIENT_URL,
+  process.env.CORS_ORIGIN,
+].filter(Boolean);
+
+const corsOptions = {
+  origin: (origin, callback) => {
+    // Allow non-browser requests and same-origin server-to-server calls.
+    if (!origin) return callback(null, true);
+
+    const isAllowed =
+      allowedOrigins.includes(origin) ||
+      /^https:\/\/.*\.vercel\.app$/.test(origin);
+
+    if (isAllowed) return callback(null, true);
+
+    console.warn(`Blocked CORS origin: ${origin}`);
+    return callback(new Error('Not allowed by CORS'));
+  },
   credentials: true,
-}));
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+};
+
+app.use(helmet());
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 app.use(express.json());
 app.use((req, res, next) => {
   res.setHeader('Cache-Control', 'no-store');

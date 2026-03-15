@@ -4,13 +4,33 @@ const Room = require('../models/Room')
 
 let io
 
+const allowedOrigins = [
+  'http://localhost:5173',
+  'https://cart-crew.vercel.app',
+  process.env.CLIENT_URL,
+  process.env.CORS_ORIGIN,
+].filter(Boolean)
+
+const socketCorsOptions = {
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true)
+
+    const isAllowed =
+      allowedOrigins.includes(origin) ||
+      /^https:\/\/.*\.vercel\.app$/.test(origin)
+
+    if (isAllowed) return callback(null, true)
+
+    console.warn(`Blocked Socket.IO CORS origin: ${origin}`)
+    return callback(new Error('Not allowed by CORS'))
+  },
+  methods: ['GET', 'POST'],
+  credentials: true,
+}
+
 const initSocket = (server) => {
   io = new Server(server, {
-    cors: {
-      origin: process.env.CLIENT_URL,
-      methods: ['GET', 'POST'],
-      credentials: true,
-    },
+    cors: socketCorsOptions,
     maxHttpBufferSize: 1e6, // 1MB max message size
     pingTimeout: 60000,
     pingInterval: 25000,
