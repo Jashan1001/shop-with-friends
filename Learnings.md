@@ -28,3 +28,36 @@ In older Mongoose you called next() to signal the hook was done.
 In modern Mongoose, async pre hooks just return - Mongoose awaits
 the function automatically. Passing next as a param and calling it
 in an async hook throws "next is not a function".
+
+### Zod v4 breaking change — err.errors moved to err.message
+In Zod v3, validation issues were in err.errors (array).
+In Zod v4, err.errors is undefined — issues are JSON-serialized
+inside err.message as a string. Always check package versions when
+a library's error shape doesn't match the docs.
+
+### Always check which directory you're running commands from
+Running npm run dev from shop-with-friends/ instead of shop-with-friends/server/
+causes cascading weird errors. Your terminal prompt should always show
+the correct folder before running any command.
+
+### Same error message for wrong email vs wrong password
+"Invalid email or password" for both cases intentionally.
+If you say "email not found", an attacker learns which emails are registered.
+Vague error messages = more secure auth.
+
+### next(err) needs a 4-param error handler to catch it
+Express only recognizes a function as an error handler if it has exactly
+4 parameters — (err, req, res, next). 3 params and it's treated as
+a regular middleware, so next(err) has nowhere to go.
+
+### Vite env variables must start with VITE_
+Vite strips any env variable that doesn't start with VITE_ for security.
+VITE_API_URL works, API_URL does not. Also restart the dev server
+after editing .env — Vite only reads it at startup.
+
+### ES modules vs CommonJS
+Vite projects use ES modules (import/export).
+Node projects use CommonJS (require/module.exports).
+Using module.exports in a Vite config file throws
+"module is not defined". Always check which module
+system a config file expects before writing it.
