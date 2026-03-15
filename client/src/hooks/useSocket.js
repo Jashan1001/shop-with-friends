@@ -5,7 +5,6 @@ import { useSocketStore } from '../store/socketStore'
 
 export const useSocket = () => {
   const accessToken = useAuthStore((s) => s.accessToken)
-  const { setSocket } = useSocketStore()
   const socketRef = useRef(null)
 
   useEffect(() => {
@@ -22,15 +21,15 @@ export const useSocket = () => {
 
     s.on('connect', () => {
       console.log('Socket connected:', s.id)
-      setSocket(s)
+      useSocketStore.getState().setSocket(s)
     })
 
     s.on('connect_error', (err) => {
       console.error('Socket error:', err.message)
     })
 
-    s.on('disconnect', (reason) => {
-      console.log('Socket disconnected:', reason)
+    s.on('disconnect', () => {
+      useSocketStore.getState().setSocket(null)
     })
 
     socketRef.current = s
@@ -38,7 +37,7 @@ export const useSocket = () => {
     return () => {
       s.disconnect()
       socketRef.current = null
-      setSocket(null)
+      useSocketStore.getState().setSocket(null)
     }
   }, [accessToken])
 }
