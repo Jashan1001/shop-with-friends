@@ -4,6 +4,13 @@
 
 **Live Demo → [cart-crew.vercel.app](https://cart-crew.vercel.app)**
 
+**Demo credentials**
+```
+Email:    demo1@cartcrew.app
+Password: Demo1234
+```
+> A pre-populated Laptops room with products, votes, and comments is ready to explore.
+
 ---
 
 ## What it does
@@ -139,7 +146,7 @@ shop-with-friends/
 
 ---
 
-## Interview talking points
+## Important notes
 
 - Implemented JWT access/refresh token rotation — access token expires in 15 minutes, refresh token stored in DB and rotated on each use, Axios interceptor handles refresh transparently
 - Prevented double-voting using MongoDB compound unique index on `(productId, userId)` — race conditions handled at the database level, not application level
