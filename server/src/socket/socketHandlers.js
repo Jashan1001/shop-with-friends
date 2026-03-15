@@ -9,8 +9,13 @@ const initSocket = (server) => {
     cors: {
       origin: process.env.CLIENT_URL,
       methods: ['GET', 'POST'],
+      credentials: true,
     },
     maxHttpBufferSize: 1e6, // 1MB max message size
+    pingTimeout: 60000,
+    pingInterval: 25000,
+    transports: ['polling', 'websocket'],
+    allowUpgrades: true,
   })
 
   // Auth middleware — runs before any connection is established
