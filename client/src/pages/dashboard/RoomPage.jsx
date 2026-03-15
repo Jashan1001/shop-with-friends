@@ -2,8 +2,9 @@ import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
-import { ArrowLeft, UserPlus, Plus, Users } from 'lucide-react'
-import { getRoom } from '../../api/rooms.api'
+import { ArrowLeft, UserPlus, Plus, Users, Settings, Trash2, LogOut, MoreVertical } from 'lucide-react'
+import toast from 'react-hot-toast'
+import { getRoom, deleteRoom, leaveRoom, updateRoom, removeMember } from '../../api/rooms.api'
 import { getProducts } from '../../api/products.api'
 import { useAuthStore } from '../../store/authStore'
 import InviteModal from '../../components/rooms/InviteModal'
@@ -16,13 +17,14 @@ import { ProductCardSkeleton } from '../../components/ui/Skeleton'
 
 export default function RoomPage() {
   const { roomId } = useParams()
-  useRoom(roomId)
   const navigate = useNavigate()
   const { user } = useAuthStore()
   const queryClient = useQueryClient()
+  useRoom(roomId)
 
   const [showInvite, setShowInvite] = useState(false)
   const [showAddProduct, setShowAddProduct] = useState(false)
+  const [showMenu, setShowMenu] = useState(false)
   const [selectedProduct, setSelectedProduct] = useState(null)
   const [sortBy, setSortBy] = useState('newest')
 
@@ -37,7 +39,9 @@ export default function RoomPage() {
     enabled: !!roomId,
   })
 
-  const isOwner = roomData?.createdBy?._id === user?.id
+  const currentUserId = user?.id || user?._id
+  const createdById = roomData?.createdBy?._id || roomData?.createdBy
+  const isOwner = String(createdById || '') === String(currentUserId || '')
 
   // Sort products
   const sortedProducts = [...products].sort((a, b) => {
@@ -51,11 +55,46 @@ export default function RoomPage() {
 
   const handleVoteUpdate = (productId, voteData) => {
     queryClient.setQueryData(['products', roomId], (old) =>
-      old.map((p) =>
+      old?.map((p) =>
         p._id === productId
           ? { ...p, upvotes: voteData.upvotes, downvotes: voteData.downvotes, userVote: voteData.userVote }
           : p
       )
+    )
+  }
+
+  const handleDeleteRoom = async () => {
+    if (!window.confirm('Delete this room? This cannot be undone.')) return
+    try {
+      await deleteRoom(roomId)
+      toast.success('Room deleted')
+      navigate('/dashboard')
+    } catch (err) {
+      toast.error('Failed to delete room')
+    }
+  }
+
+  const handleLeaveRoom = async () => {
+    if (!window.confirm('Leave this room?')) return
+    try {
+      await leaveRoom(roomId)
+      toast.success('Left room')
+      navigate('/dashboard')
+    } catch (err) {
+      toast.error('Failed to leave room')
+    }
+  }
+
+  const handleProductDeleted = (productId) => {
+    queryClient.setQueryData(['products', roomId], (old) =>
+      old?.filter((p) => p._id !== productId)
+    )
+    if (selectedProduct?._id === productId) setSelectedProduct(null)
+  }
+
+  const handleStatusUpdate = (updatedProduct) => {
+    queryClient.setQueryData(['products', roomId], (old) =>
+      old?.map((p) => (p._id === updatedProduct._id ? { ...p, ...updatedProduct } : p))
     )
   }
 
@@ -99,6 +138,68 @@ export default function RoomPage() {
           <UserPlus size={14} />
           Invite
         </button>
+
+        {/* Settings menu */}
+        <div className="relative">
+          <button
+            onClick={() => setShowMenu(!showMenu)}
+            className="w-9 h-9 flex items-center justify-center border-[2.5px] border-black hover:bg-cream transition-colors shadow-brut"
+          >
+            <MoreVertical size={16} />
+          </button>
+
+          {showMenu && (
+            <>
+              <div
+                className="fixed inset-0 z-10"
+                onClick={() => setShowMenu(false)}
+              />
+              <div className="absolute right-0 top-11 z-20 bg-white border-[2.5px] border-black shadow-brut-lg min-w-48">
+                {isOwner && (
+                  <>
+                    <button
+                      onClick={() => {
+                        setShowMenu(false)
+                        const newName = window.prompt('New room name:', roomData.name)
+                        if (newName && newName.trim()) {
+                          updateRoom(roomId, { name: newName.trim() })
+                            .then((res) => {
+                              queryClient.setQueryData(['room', roomId], (old) => ({
+                                ...old,
+                                name: res.data.room.name,
+                              }))
+                              toast.success('Room renamed')
+                            })
+                            .catch(() => toast.error('Failed to rename room'))
+                        }
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-3 font-body text-sm hover:bg-cream transition-colors border-b-[2px] border-black/10 text-left"
+                    >
+                      <Settings size={14} />
+                      Rename Room
+                    </button>
+                    <button
+                      onClick={() => { setShowMenu(false); handleDeleteRoom() }}
+                      className="w-full flex items-center gap-3 px-4 py-3 font-body text-sm hover:bg-coral hover:text-white transition-colors text-coral text-left"
+                    >
+                      <Trash2 size={14} />
+                      Delete Room
+                    </button>
+                  </>
+                )}
+                {!isOwner && (
+                  <button
+                    onClick={() => { setShowMenu(false); handleLeaveRoom() }}
+                    className="w-full flex items-center gap-3 px-4 py-3 font-body text-sm hover:bg-coral hover:text-white transition-colors text-coral text-left"
+                  >
+                    <LogOut size={14} />
+                    Leave Room
+                  </button>
+                )}
+              </div>
+            </>
+          )}
+        </div>
       </div>
 
       {/* 3-zone layout */}
@@ -116,19 +217,38 @@ export default function RoomPage() {
           </div>
           <div className="flex-1 overflow-y-auto p-3">
             {roomData.members.map((member) => (
-              <div key={member._id} className="flex items-center gap-2.5 py-2">
+              <div key={member._id} className="flex items-center gap-2.5 py-2 group">
                 <div className="w-7 h-7 bg-yellow border-[2px] border-white/20 flex items-center justify-center flex-shrink-0">
                   <span className="font-mono text-[10px] font-bold text-black">
                     {member.name.charAt(0).toUpperCase()}
                   </span>
                 </div>
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
                   <div className="font-body text-xs text-white truncate">{member.name}</div>
                   <div className="font-mono text-[10px] text-white/40 truncate">@{member.username}</div>
                 </div>
-                {member._id === roomData.createdBy._id && (
-                  <span className="font-mono text-[8px] bg-purple text-white px-1 ml-auto flex-shrink-0">OWN</span>
-                )}
+                <div className="flex items-center gap-1">
+                  {member._id === roomData.createdBy._id && (
+                    <span className="font-mono text-[8px] bg-purple text-white px-1">OWN</span>
+                  )}
+                  {isOwner && member._id !== currentUserId && (
+                    <button
+                      onClick={async () => {
+                        if (!window.confirm(`Remove @${member.username}?`)) return
+                        try {
+                          await removeMember(roomId, member._id)
+                          queryClient.invalidateQueries(['room', roomId])
+                          toast.success(`Removed @${member.username}`)
+                        } catch {
+                          toast.error('Failed to remove member')
+                        }
+                      }}
+                      className="opacity-0 group-hover:opacity-100 text-white/40 hover:text-coral transition-all"
+                    >
+                      <Trash2 size={10} />
+                    </button>
+                  )}
+                </div>
               </div>
             ))}
           </div>
@@ -191,6 +311,9 @@ export default function RoomPage() {
                     product={product}
                     onClick={setSelectedProduct}
                     onVoteUpdate={handleVoteUpdate}
+                    onDelete={handleProductDeleted}
+                    onStatusUpdate={handleStatusUpdate}
+                    isRoomOwner={isOwner}
                   />
                 ))}
               </motion.div>

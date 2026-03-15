@@ -1,9 +1,12 @@
 import { motion } from 'framer-motion'
-import { ExternalLink } from 'lucide-react'
+import { ExternalLink, Trash2, CheckCircle, XCircle } from 'lucide-react'
 import { slideUp } from '../../animations/variants'
 import VoteButtons from './VoteButtons'
 import formatPrice from '../../utils/formatPrice'
 import timeAgo from '../../utils/timeAgo'
+import { deleteProduct, updateProductStatus } from '../../api/products.api'
+import { useAuthStore } from '../../store/authStore'
+import toast from 'react-hot-toast'
 
 const STATUS_STYLES = {
   active:  { border: 'border-black', shadow: 'shadow-brut', bg: '' },
@@ -18,9 +21,33 @@ const PLATFORM_BADGE = {
   other:    { bg: 'bg-cream',  text: 'text-black', label: 'Other' },
 }
 
-export default function ProductCard({ product, onClick, onVoteUpdate }) {
+export default function ProductCard({ product, onClick, onVoteUpdate, onDelete, onStatusUpdate, isRoomOwner }) {
+  const { user } = useAuthStore()
+  const isProductOwner = product.addedBy?._id === user?.id
   const style = STATUS_STYLES[product.status] || STATUS_STYLES.active
   const badge = PLATFORM_BADGE[product.platform] || PLATFORM_BADGE.other
+
+  const handleDelete = async (e) => {
+    e.stopPropagation()
+    if (!window.confirm('Delete this product?')) return
+    try {
+      await deleteProduct(product.roomId, product._id)
+      onDelete?.(product._id)
+      toast.success('Product deleted')
+    } catch {
+      toast.error('Failed to delete product')
+    }
+  }
+
+  const handleStatus = async (e, status) => {
+    e.stopPropagation()
+    try {
+      const res = await updateProductStatus(product.roomId, product._id, status)
+      onStatusUpdate?.(res.data.product)
+    } catch {
+      toast.error('Failed to update status')
+    }
+  }
 
   return (
     <motion.div
@@ -94,6 +121,47 @@ export default function ProductCard({ product, onClick, onVoteUpdate }) {
             </a>
           )}
         </div>
+
+        {/* Owner actions */}
+        {(isProductOwner || isRoomOwner) && (
+          <div className="mt-3 pt-3 border-t-[2px] border-black/10 flex items-center gap-2 flex-wrap">
+            {isRoomOwner && product.status === 'active' && (
+              <>
+                <button
+                  onClick={(e) => handleStatus(e, 'bought')}
+                  className="flex items-center gap-1 font-mono text-[10px] uppercase border-[2px] border-black px-2 py-1 hover:bg-lime transition-colors"
+                >
+                  <CheckCircle size={10} />
+                  Bought
+                </button>
+                <button
+                  onClick={(e) => handleStatus(e, 'skipped')}
+                  className="flex items-center gap-1 font-mono text-[10px] uppercase border-[2px] border-black px-2 py-1 hover:bg-coral hover:text-white transition-colors"
+                >
+                  <XCircle size={10} />
+                  Skip
+                </button>
+              </>
+            )}
+            {isRoomOwner && product.status !== 'active' && (
+              <button
+                onClick={(e) => handleStatus(e, 'active')}
+                className="font-mono text-[10px] uppercase border-[2px] border-black px-2 py-1 hover:bg-yellow transition-colors"
+              >
+                Mark Active
+              </button>
+            )}
+            {(isProductOwner || isRoomOwner) && (
+              <button
+                onClick={handleDelete}
+                className="flex items-center gap-1 font-mono text-[10px] uppercase border-[2px] border-coral text-coral px-2 py-1 hover:bg-coral hover:text-white transition-colors ml-auto"
+              >
+                <Trash2 size={10} />
+                Delete
+              </button>
+            )}
+          </div>
+        )}
       </div>
     </motion.div>
   )
