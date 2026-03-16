@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useSocketStore } from '../store/socketStore'
+import { useAuthStore } from '../store/authStore'
 
 export const useRoom = (roomId, onNewProduct) => {
   const socket = useSocketStore((s) => s.socket)
@@ -37,11 +38,13 @@ export const useRoom = (roomId, onNewProduct) => {
       )
     })
 
-    // Vote updated
+    // Vote updated — preserve existing userVote from cache (server doesn't send per-user vote)
     socket.on('vote:updated', ({ productId, upvotes, downvotes }) => {
       queryClient.setQueryData(['products', roomId], (old) =>
         old?.map((p) =>
           p._id === productId ? { ...p, upvotes, downvotes } : p
+          // Note: intentionally NOT overwriting p.userVote here
+          // The optimistic update in VoteButtons.jsx sets the correct userVote
         )
       )
     })
@@ -73,11 +76,19 @@ export const useRoom = (roomId, onNewProduct) => {
     })
 
     socket.on('room:deleted', ({ roomId: deletedRoomId }) => {
-      window.location.href = '/dashboard'
+      // Only redirect if THIS room was deleted, not another room the user belongs to
+      if (deletedRoomId === roomId) {
+        window.location.href = '/dashboard'
+      }
     })
 
-    socket.on('member:removed', ({ roomId: removedFromRoom, userId: removedUserId }) => {
-      window.location.href = '/dashboard'
+    socket.on('member:removed', ({ userId: removedUserId }) => {
+      // Only redirect the user who was actually removed — not everyone in the room
+      const currentUser = useAuthStore.getState().user
+      const currentUserId = currentUser?.id || currentUser?._id
+      if (removedUserId === currentUserId) {
+        window.location.href = '/dashboard'
+      }
     })
 
     return () => {

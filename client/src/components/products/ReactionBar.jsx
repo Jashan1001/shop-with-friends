@@ -30,8 +30,10 @@ export default function ReactionBar({ product }) {
   }, [])
 
   const handleReact = async (emoji) => {
+    const isRemoving = getReactionData(emoji).hasReacted
+    // Only float when ADDING a reaction, not when removing (toggling off)
+    if (!isRemoving) triggerFloat(emoji)
     try {
-      triggerFloat(emoji)
       const updated = await addReaction(product._id, emoji)
       queryClient.setQueryData(['reactions', product._id], updated)
     } catch (err) {

@@ -48,7 +48,7 @@ export default function LoginPage() {
       {/* Left panel — branding */}
       <div className="hidden lg:flex w-1/2 bg-black flex-col justify-between p-12">
         <div>
-          <Link to="/landing" className="font-display text-2xl font-bold text-yellow hover:opacity-80 transition-opacity">
+          <Link to="/" className="font-display text-2xl font-bold text-yellow hover:opacity-80 transition-opacity">
             CartCrew
           </Link>
         </div>
@@ -75,7 +75,7 @@ export default function LoginPage() {
         >
           {/* Mobile logo */}
           <motion.div variants={slideUp} className="lg:hidden mb-8">
-            <Link to="/landing" className="font-display text-2xl font-bold hover:opacity-80 transition-opacity">CartCrew</Link>
+            <Link to="/" className="font-display text-2xl font-bold hover:opacity-80 transition-opacity">CartCrew</Link>
           </motion.div>
 
           <motion.h2 variants={slideUp} className="font-display text-3xl font-bold mb-2">

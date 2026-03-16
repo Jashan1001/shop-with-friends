@@ -7,7 +7,7 @@ import { getRoomIconOption } from '../../utils/roomIcons'
 export default function RoomCard({ room }) {
   const navigate = useNavigate()
   const { user } = useAuthStore()
-  const isOwner = room.createdBy._id === user?.id
+  const isOwner = room.createdBy?._id?.toString() === user?.id
   const RoomIcon = getRoomIconOption(room.emoji).icon
 
   return (
