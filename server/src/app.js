@@ -75,11 +75,31 @@ app.use('/api', globalLimiter);
 
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 
+const SENSITIVE_ERROR_PATTERN = /cloud_name|api_key|api_secret|mongodb\+srv|password|secret|token|jwt|signature|credential/i;
+
+function sanitizeErrorMessage(message) {
+  if (!message || typeof message !== 'string') return 'Internal server error';
+
+  if (SENSITIVE_ERROR_PATTERN.test(message)) {
+    return 'Configuration error. Please contact support.';
+  }
+
+  return message;
+}
+
 app.use((err, req, res, next) => {
   const statusCode = err.statusCode || 500;
+
+  // Only expose detailed client-facing messages for expected application errors.
+  // For unexpected server errors, keep responses generic.
+  const canExposeMessage = statusCode < 500;
+  const message = canExposeMessage
+    ? sanitizeErrorMessage(err.message)
+    : 'Something went wrong. Please try again.';
+
   res.status(statusCode).json({
     success: false,
-    message: err.message || 'Internal server error',
+    message,
   });
 });
 app.get("/", (req, res) => {
