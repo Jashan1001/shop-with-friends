@@ -1,5 +1,7 @@
 const Product = require('../models/Product')
 const Vote = require('../models/Vote')
+const Comment = require('../models/Comment')
+const Reaction = require('../models/Reaction')
 const ApiError = require('../utils/apiError')
 const { getIO } = require('../socket/socketHandlers')
 const scrapeMetadata = require('../utils/scrapeMetadata')
@@ -29,7 +31,6 @@ exports.addProduct = async (req, res, next) => {
 
     await product.populate('addedBy', 'name username')
 
-    // Emit to everyone in the room
     getIO().to(`room:${roomId}`).emit('product:added', product)
 
     res.status(201).json({ success: true, product })
@@ -42,7 +43,6 @@ exports.addProduct = async (req, res, next) => {
 exports.getProducts = async (req, res, next) => {
   try {
     const { roomId } = req.params
-
     const products = await Product.find({ roomId })
       .populate('addedBy', 'name username')
       .sort({ createdAt: -1 })
@@ -85,7 +85,6 @@ exports.updateProduct = async (req, res, next) => {
       throw new ApiError(403, 'You can only edit your own products')
     }
 
-    // Destructure only allowed fields — prevents mass assignment of roomId, addedBy, status
     const { title, price, image, link, description } = req.body
     const updated = await Product.findByIdAndUpdate(
       req.params.id,
@@ -108,17 +107,22 @@ exports.deleteProduct = async (req, res, next) => {
 
     const room = req.room
     const isProductOwner = product.addedBy.toString() === req.user.id
-    const isRoomOwner = room.createdBy.toString() === req.user.id
+    const isRoomOwner    = room.createdBy.toString() === req.user.id
 
     if (!isProductOwner && !isRoomOwner) {
       throw new ApiError(403, 'Not authorized to delete this product')
     }
 
-    const roomId = product.roomId.toString()
-    await Product.findByIdAndDelete(req.params.id)
-    await Vote.deleteMany({ productId: req.params.id })
+    const roomId    = product.roomId.toString()
+    const productId = req.params.id
 
-    getIO().to(`room:${roomId}`).emit('product:deleted', { productId: req.params.id })
+    // Cascade: remove all data tied to this product
+    await Product.findByIdAndDelete(productId)
+    await Vote.deleteMany({ productId })
+    await Comment.deleteMany({ productId })
+    await Reaction.deleteMany({ productId })
+
+    getIO().to(`room:${roomId}`).emit('product:deleted', { productId })
 
     res.json({ success: true, message: 'Product deleted' })
   } catch (err) {
@@ -130,15 +134,19 @@ exports.deleteProduct = async (req, res, next) => {
 exports.updateStatus = async (req, res, next) => {
   try {
     const { status } = req.body
-    const product = await Product.findByIdAndUpdate(
-      req.params.id,
-      { status },
-      { new: true }
-    ).populate('addedBy', 'name username')
+    const { id: productId, roomId } = req.params
 
-    if (!product) throw new ApiError(404, 'Product not found')
+    // IDOR guard: confirm this product actually belongs to the room in the URL.
+    // Without this a room owner could mutate a product from a different room.
+    const product = await Product.findOne({ _id: productId, roomId })
 
-    getIO().to(`room:${product.roomId.toString()}`).emit('product:updated', product)
+    if (!product) throw new ApiError(404, 'Product not found in this room')
+
+    product.status = status
+    await product.save()
+    await product.populate('addedBy', 'name username')
+
+    getIO().to(`room:${roomId}`).emit('product:updated', product)
 
     res.json({ success: true, product })
   } catch (err) {
