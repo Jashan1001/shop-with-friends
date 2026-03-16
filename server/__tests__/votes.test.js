@@ -2,7 +2,6 @@
  * votes.test.js — Voting system tests
  * Covers: vote counts, double-vote prevention (unique index), remove vote, non-member blocked
  */
-require('./setup')
 const request = require('supertest')
 const app = require('../src/app')
 

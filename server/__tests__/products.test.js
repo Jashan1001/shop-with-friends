@@ -2,17 +2,17 @@
  * products.test.js — Product CRUD tests
  * Covers: add product, non-member cannot add, edit own, cannot edit others', delete permissions
  */
-require('./setup')
 const request = require('supertest')
 const app = require('../src/app')
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 async function createUser(suffix = '') {
+  const uid = Date.now().toString(36)
   const res = await request(app).post('/api/v1/auth/signup').send({
     name: `Prod User ${suffix}`,
-    username: `produser${suffix}${Date.now()}`,
-    email: `produser${suffix}${Date.now()}@example.com`,
+    username: `pu${suffix}${uid}`,
+    email: `produser${suffix}${uid}@example.com`,
     password: 'Password1!',
   })
   return res.body

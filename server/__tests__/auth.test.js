@@ -2,7 +2,6 @@
  * auth.test.js — Authentication route tests
  * Covers: signup, login, wrong password, refresh token, logout
  */
-require('./setup')
 const request = require('supertest')
 const app = require('../src/app')
 

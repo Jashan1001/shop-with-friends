@@ -2,7 +2,6 @@
  * rooms.test.js — Room system tests
  * Covers: create, join by invite code, non-member 403, owner delete, member can't delete
  */
-require('./setup')
 const request = require('supertest')
 const app = require('../src/app')
 

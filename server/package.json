@@ -14,8 +14,9 @@
     "testMatch": [
       "**/__tests__/**/*.test.js"
     ],
-    "globalSetup": null,
-    "setupFilesAfterFramework": []
+    "setupFilesAfterEnv": [
+      "<rootDir>/__tests__/setup.js"
+    ]
   },
   "keywords": [],
   "author": "",
