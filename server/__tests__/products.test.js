@@ -211,3 +211,103 @@ describe('PUT /api/v1/rooms/:roomId/products/:id/status', () => {
     expect(res.status).toBe(403)
   })
 })
+
+// ─── ORPHAN CASCADE FIX ───────────────────────────────────────────────────────
+
+describe('DELETE /rooms/:roomId/products/:id — cascade cleanup', () => {
+  it('deletes votes, comments and reactions when a product is deleted', async () => {
+    const { accessToken } = await createUser('casc')
+
+    const roomRes = await request(app)
+      .post('/api/v1/rooms')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ name: 'Cascade Room' })
+    const roomId = roomRes.body.room._id
+
+    const productRes = await request(app)
+      .post(`/api/v1/rooms/${roomId}/products`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ title: 'Product to delete', platform: 'other' })
+    const productId = productRes.body.product._id
+
+    // Add a vote
+    await request(app)
+      .post(`/api/v1/products/${productId}/vote`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ value: 1 })
+
+    // Add a comment
+    await request(app)
+      .post(`/api/v1/products/${productId}/comments`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ text: 'Nice product' })
+
+    // Add a reaction
+    await request(app)
+      .post(`/api/v1/products/${productId}/reactions`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ emoji: '👍' })
+
+    // Delete the product
+    await request(app)
+      .delete(`/api/v1/rooms/${roomId}/products/${productId}`)
+      .set('Authorization', `Bearer ${accessToken}`)
+
+    // Verify nothing is orphaned
+    const Vote = require('../src/models/Vote')
+    const Comment = require('../src/models/Comment')
+    const Reaction = require('../src/models/Reaction')
+
+    const votes = await Vote.find({ productId })
+    const comments = await Comment.find({ productId })
+    const reactions = await Reaction.find({ productId })
+
+    expect(votes).toHaveLength(0)
+    expect(comments).toHaveLength(0)
+    expect(reactions).toHaveLength(0)
+  })
+})
+
+// ─── IDOR FIX ─────────────────────────────────────────────────────────────────
+
+describe('Security: updateStatus IDOR protection', () => {
+  it('cannot update status of a product belonging to a different room', async () => {
+    const owner = await createUser('idor1')
+    const other = await createUser('idor2')
+
+    // Owner creates room A with a product
+    const roomA = await request(app)
+      .post('/api/v1/rooms')
+      .set('Authorization', `Bearer ${owner.accessToken}`)
+      .send({ name: 'Room A' })
+    const roomAId = roomA.body.room._id
+
+    const productRes = await request(app)
+      .post(`/api/v1/rooms/${roomAId}/products`)
+      .set('Authorization', `Bearer ${owner.accessToken}`)
+      .send({ title: 'Product in A', platform: 'other' })
+    const productId = productRes.body.product._id
+
+    // Other user creates room B
+    const roomB = await request(app)
+      .post('/api/v1/rooms')
+      .set('Authorization', `Bearer ${other.accessToken}`)
+      .send({ name: 'Room B' })
+    const roomBId = roomB.body.room._id
+
+    // Other tries to update product from room A via room B's URL
+    const res = await request(app)
+      .put(`/api/v1/rooms/${roomBId}/products/${productId}/status`)
+      .set('Authorization', `Bearer ${other.accessToken}`)
+      .send({ status: 'bought' })
+
+    // Should be 403 (not a member of room B's context for this product)
+    // or 404 (product not found in room B) — either is correct
+    expect([403, 404]).toContain(res.status)
+
+    // Verify status was NOT changed
+    const Product = require('../src/models/Product')
+    const product = await Product.findById(productId)
+    expect(product.status).toBe('active')
+  })
+})
