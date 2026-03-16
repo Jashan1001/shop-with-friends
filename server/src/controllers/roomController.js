@@ -64,13 +64,20 @@ exports.getRoom = async (req, res, next) => {
 // --- UPDATE ROOM ---
 exports.updateRoom = async (req, res, next) => {
   try {
-    // Destructure only allowed fields — prevents mass assignment of createdBy, members, inviteCode
     const { name, description, emoji } = req.body
     const room = await Room.findByIdAndUpdate(
       req.params.roomId,
       { name, description, emoji },
       { new: true, omitUndefined: true }
     )
+
+    // Notify all members so their UI updates in real-time
+    getIO().to(`room:${req.params.roomId}`).emit('room:updated', {
+      roomId:      req.params.roomId,
+      name:        room.name,
+      description: room.description,
+      emoji:       room.emoji,
+    })
 
     res.json({ success: true, room })
   } catch (err) {

@@ -125,6 +125,16 @@ exports.editComment = async (req, res, next) => {
     await comment.save()
     await comment.populate('userId', 'name username')
 
+    // Emit so other members see the edit in real-time
+    getIO()
+      .to(`room:${comment.roomId.toString()}`)
+      .emit('comment:edited', {
+        commentId:  comment._id.toString(),
+        productId:  comment.productId.toString(),
+        text:       comment.text,
+        edited:     true,
+      })
+
     res.json({ success: true, comment })
   } catch (err) {
     next(err)
