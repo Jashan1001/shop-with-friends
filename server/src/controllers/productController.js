@@ -39,26 +39,35 @@ exports.addProduct = async (req, res, next) => {
   }
 }
 
-// --- GET PRODUCTS ---
+// --- GET PRODUCTS (paginated) ---
 exports.getProducts = async (req, res, next) => {
   try {
     const { roomId } = req.params
-    const products = await Product.find({ roomId })
-      .populate('addedBy', 'name username')
-      .sort({ createdAt: -1 })
+    const limit = Math.min(parseInt(req.query.limit) || 20, 50)
+    const page  = Math.max(parseInt(req.query.page)  || 1,  1)
+    const skip  = (page - 1) * limit
+
+    const [products, total] = await Promise.all([
+      Product.find({ roomId })
+        .populate('addedBy', 'name username')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit),
+      Product.countDocuments({ roomId }),
+    ])
 
     const productIds = products.map((p) => p._id)
 
-    // One query for all votes in this room feed.
+    // One query for all votes in this page — no N+1
     const allVotes = await Vote.find({ productId: { $in: productIds } })
 
     const productsWithVotes = products.map((product) => {
       const votes = allVotes.filter(
         (v) => v.productId.toString() === product._id.toString()
       )
-      const upvotes = votes.filter((v) => v.value === 1).length
+      const upvotes   = votes.filter((v) => v.value === 1).length
       const downvotes = votes.filter((v) => v.value === -1).length
-      const userVote = votes.find((v) => v.userId.toString() === req.user.id)
+      const userVote  = votes.find((v) => v.userId.toString() === req.user.id)
 
       return {
         ...product.toObject(),
@@ -68,7 +77,17 @@ exports.getProducts = async (req, res, next) => {
       }
     })
 
-    res.json({ success: true, products: productsWithVotes })
+    res.json({
+      success: true,
+      products: productsWithVotes,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+        hasNextPage: page * limit < total,
+      },
+    })
   } catch (err) {
     next(err)
   }

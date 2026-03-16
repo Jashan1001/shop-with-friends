@@ -1,6 +1,6 @@
 const Comment = require('../models/Comment')
 const Product = require('../models/Product')
-const Room = require('../models/Room')
+const Room    = require('../models/Room')
 const ApiError = require('../utils/apiError')
 const { getIO } = require('../socket/socketHandlers')
 
@@ -27,7 +27,7 @@ exports.addComment = async (req, res, next) => {
       productId,
       roomId: product.roomId,
       userId: req.user.id,
-      text: req.body.text,
+      text:   req.body.text,
     })
 
     await comment.populate('userId', 'name username')
@@ -40,7 +40,7 @@ exports.addComment = async (req, res, next) => {
   }
 }
 
-// --- GET COMMENTS ---
+// --- GET COMMENTS (paginated) ---
 exports.getComments = async (req, res, next) => {
   try {
     const product = await Product.findById(req.params.id)
@@ -48,11 +48,30 @@ exports.getComments = async (req, res, next) => {
 
     await assertRoomMember(product.roomId, req.user.id)
 
-    const comments = await Comment.find({ productId: req.params.id })
-      .populate('userId', 'name username')
-      .sort({ createdAt: 1 })
+    const limit = Math.min(parseInt(req.query.limit) || 50, 100)
+    const page  = Math.max(parseInt(req.query.page)  || 1,  1)
+    const skip  = (page - 1) * limit
 
-    res.json({ success: true, comments })
+    const [comments, total] = await Promise.all([
+      Comment.find({ productId: req.params.id })
+        .populate('userId', 'name username')
+        .sort({ createdAt: 1 })
+        .skip(skip)
+        .limit(limit),
+      Comment.countDocuments({ productId: req.params.id }),
+    ])
+
+    res.json({
+      success: true,
+      comments,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+        hasNextPage: page * limit < total,
+      },
+    })
   } catch (err) {
     next(err)
   }
@@ -66,15 +85,14 @@ exports.deleteComment = async (req, res, next) => {
 
     const room = await assertRoomMember(comment.roomId, req.user.id)
 
-    // Both the comment author AND the room owner can delete comments
     const isCommentOwner = comment.userId.toString() === req.user.id
-    const isRoomOwner = room?.createdBy.toString() === req.user.id
+    const isRoomOwner    = room?.createdBy.toString() === req.user.id
 
     if (!isCommentOwner && !isRoomOwner) {
       throw new ApiError(403, 'Not authorized to delete this comment')
     }
 
-    const roomId = comment.roomId.toString()
+    const roomId    = comment.roomId.toString()
     const productId = comment.productId.toString()
 
     await Comment.findByIdAndDelete(req.params.commentId)
@@ -102,9 +120,10 @@ exports.editComment = async (req, res, next) => {
       throw new ApiError(403, 'You can only edit your own comments')
     }
 
-    comment.text = req.body.text
+    comment.text   = req.body.text
     comment.edited = true
     await comment.save()
+    await comment.populate('userId', 'name username')
 
     res.json({ success: true, comment })
   } catch (err) {
