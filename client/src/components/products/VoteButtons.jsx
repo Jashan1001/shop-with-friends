@@ -6,27 +6,26 @@ import { vote, removeVote } from '../../api/votes.api'
 export default function VoteButtons({ product, onVoteUpdate }) {
   const [loading, setLoading] = useState(false)
 
-  const userVote = product.userVote // 1, -1, or null
+  const userVote = product.userVote
 
   const handleVote = async (value) => {
     if (loading) return
     setLoading(true)
 
     try {
-      // If clicking same vote — remove it
       if (userVote === value) {
         await removeVote(product._id)
         onVoteUpdate(product._id, {
-          upvotes: value === 1 ? product.upvotes - 1 : product.upvotes,
+          upvotes:   value === 1  ? product.upvotes   - 1 : product.upvotes,
           downvotes: value === -1 ? product.downvotes - 1 : product.downvotes,
-          userVote: null,
+          userVote:  null,
         })
       } else {
         await vote(product._id, value)
         onVoteUpdate(product._id, {
-          upvotes: value === 1
+          upvotes:   value === 1
             ? product.upvotes + 1
-            : userVote === 1 ? product.upvotes - 1 : product.upvotes,
+            : userVote === 1  ? product.upvotes   - 1 : product.upvotes,
           downvotes: value === -1
             ? product.downvotes + 1
             : userVote === -1 ? product.downvotes - 1 : product.downvotes,
@@ -41,20 +40,21 @@ export default function VoteButtons({ product, onVoteUpdate }) {
   }
 
   return (
-    <div className="flex items-center gap-1">
-      {/* Upvote */}
+    <div className="flex items-center gap-1" role="group" aria-label="Vote on this product">
       <motion.button
         whileHover={{ x: -2, y: -2 }}
         whileTap={{ scale: 0.9 }}
         onClick={() => handleVote(1)}
         disabled={loading}
+        aria-label={`Upvote${userVote === 1 ? ' (active)' : ''}, ${product.upvotes} upvotes`}
+        aria-pressed={userVote === 1}
         className={`flex items-center gap-1 px-2 py-1 border-[2.5px] border-black font-mono text-xs font-bold transition-all
           ${userVote === 1
             ? 'bg-lime shadow-brut'
             : 'bg-white hover:bg-lime/30'
           }`}
       >
-        <ChevronUp size={14} />
+        <ChevronUp size={14} aria-hidden="true" />
         <motion.span
           key={product.upvotes}
           initial={{ scale: 1.3 }}
@@ -65,19 +65,20 @@ export default function VoteButtons({ product, onVoteUpdate }) {
         </motion.span>
       </motion.button>
 
-      {/* Downvote */}
       <motion.button
         whileHover={{ x: -2, y: -2 }}
         whileTap={{ scale: 0.9 }}
         onClick={() => handleVote(-1)}
         disabled={loading}
+        aria-label={`Downvote${userVote === -1 ? ' (active)' : ''}, ${product.downvotes} downvotes`}
+        aria-pressed={userVote === -1}
         className={`flex items-center gap-1 px-2 py-1 border-[2.5px] border-black font-mono text-xs font-bold transition-all
           ${userVote === -1
             ? 'bg-coral text-white border-coral'
             : 'bg-white hover:bg-coral/20'
           }`}
       >
-        <ChevronDown size={14} />
+        <ChevronDown size={14} aria-hidden="true" />
         <motion.span
           key={product.downvotes}
           initial={{ scale: 1.3 }}

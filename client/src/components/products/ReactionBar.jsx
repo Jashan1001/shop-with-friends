@@ -76,6 +76,8 @@ export default function ReactionBar({ product }) {
               whileHover={{ x: -1, y: -1 }}
               whileTap={{ scale: 0.9 }}
               onClick={(e) => { e.stopPropagation(); handleReact(emoji) }}
+              aria-label={`React with ${emoji}${hasReacted ? ', remove reaction' : ''}, ${count} reactions`}
+              aria-pressed={hasReacted}
               className={`
                 flex items-center gap-1 px-2 py-1
                 border-[2px] border-black font-mono text-[11px] font-bold
@@ -86,7 +88,7 @@ export default function ReactionBar({ product }) {
                 }
               `}
             >
-              <span className="text-sm leading-none">{emoji}</span>
+              <span className="text-sm leading-none" aria-hidden="true">{emoji}</span>
               {count > 0 && (
                 <motion.span
                   key={count}
