@@ -1,6 +1,7 @@
 const Product = require('../models/Product')
 const Vote = require('../models/Vote')
 const ApiError = require('../utils/apiError')
+const scrapeMetadata = require('../utils/scrapeMetadata')
 const { getIO } = require('../socket/socketHandlers')
 
 // --- ADD PRODUCT ---
@@ -123,6 +124,19 @@ exports.updateStatus = async (req, res, next) => {
     getIO().to(`room:${product.roomId.toString()}`).emit('product:updated', product)
 
     res.json({ success: true, product })
+  } catch (err) {
+    next(err)
+  }
+}
+
+// --- SCRAPE PRODUCT URL ---
+exports.scrapeProduct = async (req, res, next) => {
+  try {
+    const { url } = req.body
+    if (!url) throw new ApiError(400, 'URL is required')
+
+    const data = await scrapeMetadata(url)
+    res.json({ success: true, ...data })
   } catch (err) {
     next(err)
   }
