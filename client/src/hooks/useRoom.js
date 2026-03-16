@@ -67,6 +67,11 @@ export const useRoom = (roomId, onNewProduct) => {
       queryClient.invalidateQueries(['room', roomId])
     })
 
+    // Reaction burst — update reaction cache for the affected product
+    socket.on('reaction:burst', ({ productId, reactions }) => {
+      queryClient.setQueryData(['reactions', productId], reactions)
+    })
+
     socket.on('room:deleted', ({ roomId: deletedRoomId }) => {
       window.location.href = '/dashboard'
     })
@@ -79,7 +84,7 @@ export const useRoom = (roomId, onNewProduct) => {
       socket.emit('leave:room', roomId)
       ;['product:added', 'product:updated', 'product:deleted',
         'vote:updated', 'comment:added', 'comment:deleted',
-        'member:joined', 'room:deleted', 'member:removed'
+        'member:joined', 'reaction:burst', 'room:deleted', 'member:removed'
       ].forEach((e) => socket.off(e))
     }
   }, [socket, roomId, onNewProduct])

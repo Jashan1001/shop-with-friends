@@ -10,9 +10,10 @@ const roomRoutes = require('./routes/roomRoutes');
 const productRoutes = require('./routes/productRoutes');
 const voteRoutes = require('./routes/voteRoutes');
 const commentRoutes = require('./routes/commentRoutes');
-const userRoutes = require('./routes/userRoutes');
+const reactionRoutes = require('./routes/reactionRoutes');
+const { scrapeUrl } = require('./controllers/productController');
 const { protect } = require('./middleware/authMiddleware');
-const { scrapeProduct } = require('./controllers/productController');
+const userRoutes = require('./routes/userRoutes');
 const app = express();
 
 app.set('trust proxy', 1);
@@ -63,11 +64,13 @@ if (process.env.NODE_ENV === 'development') {
 
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/rooms', roomRoutes);
+// Scrape must come BEFORE /:id routes to avoid Express matching "scrape" as an ID
+app.post('/api/v1/products/scrape', protect, scrapeUrl);
 app.use('/api/v1/rooms/:roomId/products', productRoutes);
 app.use('/api/v1/products/:id/vote', voteRoutes);
 app.use('/api/v1/products/:id/comments', commentRoutes);
+app.use('/api/v1/products/:id/reactions', reactionRoutes);
 app.use('/api/v1/users', userRoutes);
-app.post('/api/v1/products/scrape', protect, scrapeProduct);
 app.use('/api', globalLimiter);
 
 app.get('/health', (req, res) => res.json({ status: 'ok' }));

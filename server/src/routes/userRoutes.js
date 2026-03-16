@@ -1,7 +1,14 @@
 const express = require('express')
 const router = express.Router()
-const { updateProfile, changePassword } = require('../controllers/userController')
+const {
+  updateProfile,
+  changePassword,
+  uploadAvatar,
+  checkUsername,
+  getPublicProfile,
+} = require('../controllers/userController')
 const { protect } = require('../middleware/authMiddleware')
+const { uploadAvatar: multerAvatar } = require('../middleware/upload')
 const validate = require('../middleware/validate')
 const { z } = require('zod')
 
@@ -18,8 +25,14 @@ const passwordSchema = z.object({
     .regex(/[0-9]/, 'Must contain number'),
 })
 
+// Public routes
+router.get('/check-username', checkUsername)
+router.get('/:username', getPublicProfile)
+
+// Protected routes
 router.use(protect)
-router.put('/profile', validate(profileSchema), updateProfile)
+router.put('/profile',  validate(profileSchema),  updateProfile)
 router.put('/password', validate(passwordSchema), changePassword)
+router.post('/avatar',  multerAvatar,             uploadAvatar)
 
 module.exports = router

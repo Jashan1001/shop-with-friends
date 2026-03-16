@@ -1,19 +1,19 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { motion } from 'framer-motion'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Camera, Loader2 } from 'lucide-react'
 import toast from 'react-hot-toast'
-import { updateProfile, changePassword } from '../api/users.api'
+import { updateProfile, changePassword, uploadAvatar } from '../api/users.api'
 import { useAuthStore } from '../store/authStore'
 import errorMessage from '../utils/errorMessage'
 import { slideUp, stagger } from '../animations/variants'
 
 const profileSchema = z.object({
   name: z.string().min(1, 'Name is required').max(50),
-  bio: z.string().max(160).optional(),
+  bio:  z.string().max(160).optional(),
 })
 
 const passwordSchema = z.object({
@@ -29,15 +29,40 @@ export default function ProfilePage() {
   const { user, updateUser } = useAuthStore()
   const [profileLoading, setProfileLoading] = useState(false)
   const [passwordLoading, setPasswordLoading] = useState(false)
+  const [avatarLoading, setAvatarLoading] = useState(false)
+  const [avatarPreview, setAvatarPreview] = useState(user?.avatar || null)
+  const fileInputRef = useRef(null)
 
   const profileForm = useForm({
     resolver: zodResolver(profileSchema),
     defaultValues: { name: user?.name || '', bio: user?.bio || '' },
   })
 
-  const passwordForm = useForm({
-    resolver: zodResolver(passwordSchema),
-  })
+  const passwordForm = useForm({ resolver: zodResolver(passwordSchema) })
+
+  // Handle file selection → preview + upload
+  const handleAvatarChange = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Preview immediately
+    const reader = new FileReader()
+    reader.onload = (ev) => setAvatarPreview(ev.target.result)
+    reader.readAsDataURL(file)
+
+    // Upload to Cloudinary via server
+    setAvatarLoading(true)
+    try {
+      const res = await uploadAvatar(file)
+      updateUser(res.data.user)
+      toast.success('Avatar updated!')
+    } catch (err) {
+      toast.error(errorMessage(err))
+      setAvatarPreview(user?.avatar || null) // revert preview
+    } finally {
+      setAvatarLoading(false)
+    }
+  }
 
   const onProfileSubmit = async (data) => {
     setProfileLoading(true)
@@ -65,42 +90,61 @@ export default function ProfilePage() {
     }
   }
 
+  const initial = user?.name?.charAt(0)?.toUpperCase() || '?'
+
   return (
     <div className="min-h-screen bg-cream">
 
       {/* Navbar */}
-      <div className="border-b-[2.5px] border-black bg-white px-8 py-4 flex items-center gap-4">
+      <div className="border-b-[2.5px] border-black bg-white px-6 py-4 flex items-center gap-4 sticky top-0 z-10">
         <button
           onClick={() => navigate('/dashboard')}
-          className="flex items-center gap-1.5 font-body text-sm border-[2.5px] border-black px-3 py-1.5 shadow-brut hover:shadow-brut-lg transition-shadow"
+          className="flex items-center gap-1.5 font-body text-sm border-[2.5px] border-black px-3 py-1.5 shadow-brut hover:shadow-brut-lg transition-shadow hover:-translate-x-0.5 hover:-translate-y-0.5"
         >
-          <ArrowLeft size={14} />
-          Back
+          <ArrowLeft size={14} /> Back
         </button>
         <span className="font-display text-xl font-bold">Profile</span>
       </div>
 
-      <div className="max-w-2xl mx-auto px-8 py-10">
+      <div className="max-w-2xl mx-auto px-6 py-10">
 
-        {/* Avatar */}
-        <motion.div
-          variants={stagger}
-          initial="hidden"
-          animate="visible"
-          className="flex items-center gap-6 mb-10"
-        >
-          <motion.div
-            variants={slideUp}
-            className="w-20 h-20 bg-yellow border-[2.5px] border-black shadow-brut flex items-center justify-center"
-          >
-            <span className="font-display text-3xl font-black">
-                {user?.name?.charAt(0)?.toUpperCase() || '?'}
-            </span>
+        {/* Avatar + name header */}
+        <motion.div variants={stagger} initial="hidden" animate="visible" className="flex items-center gap-6 mb-10">
+          <motion.div variants={slideUp} className="relative group">
+            {/* Avatar square */}
+            <div
+              className="w-20 h-20 bg-yellow border-[2.5px] border-black shadow-brut flex items-center justify-center overflow-hidden relative cursor-pointer"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              {avatarPreview ? (
+                <img src={avatarPreview} alt="Avatar" className="w-full h-full object-cover" />
+              ) : (
+                <span className="font-display text-3xl font-black text-black">{initial}</span>
+              )}
+
+              {/* Upload overlay */}
+              <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                {avatarLoading
+                  ? <Loader2 size={20} className="text-white animate-spin" />
+                  : <Camera size={20} className="text-white" />
+                }
+              </div>
+            </div>
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              className="hidden"
+              onChange={handleAvatarChange}
+            />
           </motion.div>
+
           <motion.div variants={slideUp}>
             <h1 className="font-display text-2xl font-bold">{user?.name}</h1>
             <p className="font-mono text-sm text-muted">@{user?.username}</p>
             <p className="font-mono text-xs text-muted">{user?.email}</p>
+            <p className="font-mono text-[10px] text-muted/60 mt-1">Click avatar to change</p>
           </motion.div>
         </motion.div>
 

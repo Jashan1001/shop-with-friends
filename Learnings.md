@@ -176,3 +176,39 @@ to allow connections from Railway, Vercel, and any device.
 Running NODE_ENV=development on Railway enables morgan logging
 and may change error handling behavior. Always set NODE_ENV=production
 in your cloud platform's environment variables.
+### multer-storage-cloudinary needs cloudinary v2, not v3
+multer-storage-cloudinary uses cloudinary.v2 internally.
+Import as: const cloudinary = require('cloudinary').v2
+If you import the root cloudinary object directly, config doesn't persist
+and uploads fail silently with "cloud_name required" errors.
+
+### Multer file goes to req.file, not req.body
+After multer middleware runs, the uploaded file is at req.file.path (Cloudinary URL)
+and req.file.mimetype. The text fields from the same multipart form are in req.body.
+Don't look for the file in req.body — it won't be there.
+
+### FormData for file uploads — don't set Content-Type manually
+When sending FormData with axios, do NOT set 'Content-Type': 'multipart/form-data' yourself.
+Let axios set it automatically — it needs to include the boundary string
+(e.g. multipart/form-data; boundary=----...) which only axios knows.
+Setting the header manually breaks the upload.
+
+### FileReader for instant avatar preview before upload completes
+Use FileReader.readAsDataURL(file) to show a local preview immediately.
+The user sees their new avatar right away while the upload happens in the background.
+If the upload fails, revert the preview to the previous URL.
+
+### useDebounce prevents API spam on every keypress
+Without debouncing, a username check fires on every character typed.
+useDebounce(value, 400) delays the effect until 400ms after the user stops typing.
+This means one API call instead of one per keystroke — critical for availability checks.
+
+### Check username availability before form submission too
+The submit button should be disabled if usernameAvailable === false.
+Without this, a user can type a taken username, ignore the "taken" indicator, and submit.
+The server will catch it but the UX is better if the button itself prevents submission.
+
+### Password strength feedback must be non-blocking
+The strength indicator is cosmetic — it should never block form submission on its own.
+Only the Zod schema (min 8 chars, uppercase, number) enforces real requirements.
+The strength bar is feedback, not a gate.

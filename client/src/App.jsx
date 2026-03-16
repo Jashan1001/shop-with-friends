@@ -24,6 +24,7 @@ function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/landing" element={<LandingPage />} />
+        <Route path="/" element={<LandingPage />} />
         <Route
           path="/dashboard"
           element={
@@ -38,7 +39,6 @@ function App() {
           element={<ProtectedRoute><RoomPage /></ProtectedRoute>}
         />
         <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
-        <Route path="/" element={<Navigate to="/landing" replace />} />
       </Routes>
     </BrowserRouter>
   )

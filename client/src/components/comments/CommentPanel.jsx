@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Trash2 } from 'lucide-react'
+import DOMPurify from 'dompurify'
 import { getComments, addComment, deleteComment } from '../../api/comments.api'
 import { useAuthStore } from '../../store/authStore'
 import timeAgo from '../../utils/timeAgo'
@@ -45,7 +46,7 @@ export default function CommentPanel({ product }) {
     <div className="flex flex-col h-full">
 
       {/* Comments list */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto p-4 space-y-3">
         {isLoading && (
           <span className="font-mono text-xs text-muted">Loading...</span>
         )}
@@ -54,35 +55,43 @@ export default function CommentPanel({ product }) {
             No comments yet. Be the first.
           </span>
         )}
-        {comments.map((comment) => (
-          <div key={comment._id} className="border-[2px] border-black p-3 bg-cream">
-            <div className="flex items-center justify-between mb-1">
-              <span className="font-mono text-[11px] font-bold">
-                @{comment.userId?.username}
-              </span>
-              <div className="flex items-center gap-2">
-                <span className="font-mono text-[10px] text-muted">
-                  {timeAgo(comment.createdAt)}
+        {comments.map((comment) => {
+          const safeUsername = DOMPurify.sanitize(comment.userId?.username || '')
+          const safeText = DOMPurify.sanitize(comment.text || '')
+          return (
+            <div key={comment._id} className="border-[2px] border-black p-3 bg-cream">
+              <div className="flex items-center justify-between mb-1">
+                <span className="font-mono text-[11px] font-bold">
+                  @{safeUsername}
                 </span>
-                {comment.userId?._id === user?.id && (
-                  <button
-                    onClick={() => handleDelete(comment._id)}
-                    className="text-muted hover:text-coral transition-colors"
-                  >
-                    <Trash2 size={11} />
-                  </button>
-                )}
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-[10px] text-muted">
+                    {timeAgo(comment.createdAt)}
+                  </span>
+                  {comment.userId?._id === user?.id && (
+                    <button
+                      onClick={() => handleDelete(comment._id)}
+                      className="text-muted hover:text-coral transition-colors"
+                    >
+                      <Trash2 size={11} />
+                    </button>
+                  )}
+                </div>
               </div>
+              {/* Sanitized comment text */}
+              <p
+                className="font-body text-sm leading-relaxed"
+                dangerouslySetInnerHTML={{ __html: safeText }}
+              />
             </div>
-            <p className="font-body text-sm leading-relaxed">{comment.text}</p>
-          </div>
-        ))}
+          )
+        })}
       </div>
 
       {/* Input */}
       <form
         onSubmit={handleSubmit}
-        className="border-t-[2.5px] border-black p-3 flex gap-2"
+        className="border-t-[2.5px] border-black p-3 flex gap-2 flex-shrink-0"
       >
         <input
           value={text}

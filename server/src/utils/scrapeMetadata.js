@@ -1,60 +1,80 @@
 const axios = require('axios')
 const cheerio = require('cheerio')
 
-const scrapeMetadata = async (url) => {
+/**
+ * Scrape Open Graph + meta tags from a product URL.
+ * Returns { title, image, price, description, platform }
+ * Gracefully returns partial data if scraping is blocked.
+ */
+async function scrapeMetadata(url) {
   try {
-    const { data } = await axios.get(url, {
+    const { data: html } = await axios.get(url, {
       timeout: 8000,
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.5',
+        // Mimic a real browser enough to get OG tags from most sites
+        'User-Agent': 'Mozilla/5.0 (compatible; CartCrew/1.0; +https://cartcrew.app)',
+        Accept: 'text/html,application/xhtml+xml',
+        'Accept-Language': 'en-US,en;q=0.9',
       },
+      maxRedirects: 5,
     })
 
-    const $ = cheerio.load(data)
+    const $ = cheerio.load(html)
+
+    const og = (prop) =>
+      $(`meta[property="og:${prop}"]`).attr('content') ||
+      $(`meta[name="og:${prop}"]`).attr('content') ||
+      ''
+
+    const meta = (name) =>
+      $(`meta[name="${name}"]`).attr('content') || ''
 
     const title =
-      $('meta[property="og:title"]').attr('content') ||
-      $('meta[name="twitter:title"]').attr('content') ||
-      $('title').text() ||
+      og('title') ||
+      $('title').text().trim().split('|')[0].trim() ||
+      $('h1').first().text().trim() ||
       ''
 
-    const image =
-      $('meta[property="og:image"]').attr('content') ||
-      $('meta[name="twitter:image"]').attr('content') ||
-      ''
+    const image = og('image') || ''
+    const description = og('description') || meta('description') || ''
 
-    const description =
-      $('meta[property="og:description"]').attr('content') ||
-      $('meta[name="description"]').attr('content') ||
-      ''
-
-    let price = null
-
-    const ogPrice =
-      $('meta[property="product:price:amount"]').attr('content') ||
-      $('meta[property="og:price:amount"]').attr('content')
-
-    if (ogPrice) {
-      price = parseFloat(ogPrice.replace(/[^0-9.]/g, ''))
+    // Price — look for common patterns in OG or JSON-LD
+    let price = ''
+    const priceMeta = $('meta[property="product:price:amount"]').attr('content') ||
+                      $('meta[name="twitter:data1"]').attr('content') || ''
+    if (priceMeta && !isNaN(parseFloat(priceMeta))) {
+      price = priceMeta
     }
 
-    let platform = 'other'
-    if (url.includes('amazon')) platform = 'amazon'
-    else if (url.includes('flipkart')) platform = 'flipkart'
-    else if (url.includes('myntra')) platform = 'myntra'
+    // Detect platform from URL
+    const platform = detectPlatform(url)
 
     return {
-      title: title.trim().slice(0, 200),
-      image: image.trim(),
-      description: description.trim().slice(0, 500),
-      price,
+      title: title.slice(0, 200),
+      image,
+      description: description.slice(0, 500),
+      price: price ? parseFloat(price) : undefined,
       platform,
     }
   } catch (err) {
-    throw new Error(`Could not fetch product data: ${err.message}`)
+    // Scraping blocked or network error — return minimal data
+    // The client will fall back to manual entry
+    return {
+      title: '',
+      image: '',
+      description: '',
+      price: undefined,
+      platform: detectPlatform(url),
+      error: 'Could not fetch page. Please fill in manually.',
+    }
   }
+}
+
+function detectPlatform(url = '') {
+  if (url.includes('amazon')) return 'amazon'
+  if (url.includes('flipkart')) return 'flipkart'
+  if (url.includes('myntra')) return 'myntra'
+  return 'other'
 }
 
 module.exports = scrapeMetadata
