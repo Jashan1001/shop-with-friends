@@ -3,6 +3,8 @@ const crypto = require('crypto');
 const User = require('../models/User');
 const ApiError = require('../utils/apiError');
 
+const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 // --- Helper: generate both tokens ---
 const generateTokens = (userId) => {
   const accessToken = jwt.sign(
@@ -27,19 +29,26 @@ const generateTokens = (userId) => {
 exports.signup = async (req, res, next) => {
   try {
     const { name, username, email, password } = req.body;
+    const normalizedEmail = String(email).trim().toLowerCase();
+    const normalizedUsername = String(username).trim().toLowerCase();
 
     // Check if email or username already exists
     const existingUser = await User.findOne({
-      $or: [{ email }, { username }],
+      $or: [{ email: normalizedEmail }, { username: normalizedUsername }],
     });
 
     if (existingUser) {
-      const field = existingUser.email === email ? 'email' : 'username';
+      const field = existingUser.email === normalizedEmail ? 'email' : 'username';
       throw new ApiError(409, `This ${field} is already taken`);
     }
 
     // Create user — password gets hashed by the pre-save hook
-    const user = await User.create({ name, username, email, password });
+    const user = await User.create({
+      name: String(name).trim(),
+      username: normalizedUsername,
+      email: normalizedEmail,
+      password,
+    });
 
     const { accessToken, refreshToken } = generateTokens(user._id);
 
@@ -67,9 +76,20 @@ exports.signup = async (req, res, next) => {
 exports.login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
+    const normalizedEmail = String(email).trim().toLowerCase();
 
     // Need +password because it has select:false on the model
-    const user = await User.findOne({ email }).select('+password');
+    let user = await User.findOne({ email: normalizedEmail }).select('+password');
+
+    // Backward compatibility for legacy records with mixed-case email values.
+    if (!user) {
+      user = await User.findOne({
+        email: {
+          $regex: `^${escapeRegex(normalizedEmail)}$`,
+          $options: 'i',
+        },
+      }).select('+password');
+    }
 
     if (!user) {
       // Deliberately vague — don't tell attackers whether the email exists

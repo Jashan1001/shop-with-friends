@@ -79,6 +79,16 @@ describe('POST /api/v1/auth/login', () => {
     expect(res.body.refreshToken).toBeDefined()
   })
 
+  it('logs in with uppercase/whitespace email input', async () => {
+    const res = await request(app).post('/api/v1/auth/login').send({
+      email: `  ${validUser.email.toUpperCase()}  `,
+      password: validUser.password,
+    })
+
+    expect(res.status).toBe(200)
+    expect(res.body.success).toBe(true)
+  })
+
   it('rejects wrong password with vague error (no user enumeration)', async () => {
     const res = await request(app).post('/api/v1/auth/login').send({
       email: validUser.email,

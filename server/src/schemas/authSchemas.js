@@ -1,13 +1,23 @@
 const { z } = require('zod');
 
-const signupSchema = z.object({
-  name: z.string().min(1, 'Name is required').max(50),
-  username: z
+const normalizeEmail = z.preprocess(
+  (value) => (typeof value === 'string' ? value.trim().toLowerCase() : value),
+  z.string().email('Invalid email address')
+);
+
+const normalizeUsername = z.preprocess(
+  (value) => (typeof value === 'string' ? value.trim().toLowerCase() : value),
+  z
     .string()
     .min(3, 'Username must be at least 3 characters')
     .max(20)
-    .regex(/^[a-zA-Z0-9_]+$/, 'Username can only contain letters, numbers, underscores'),
-  email: z.string().email('Invalid email address'),
+    .regex(/^[a-zA-Z0-9_]+$/, 'Username can only contain letters, numbers, underscores')
+);
+
+const signupSchema = z.object({
+  name: z.string().min(1, 'Name is required').max(50),
+  username: normalizeUsername,
+  email: normalizeEmail,
   password: z
     .string()
     .min(8, 'Password must be at least 8 characters')
@@ -16,7 +26,7 @@ const signupSchema = z.object({
 });
 
 const loginSchema = z.object({
-  email: z.string().email('Invalid email address'),
+  email: normalizeEmail,
   password: z.string().min(1, 'Password is required'),
 });
 
