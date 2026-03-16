@@ -253,3 +253,27 @@ findByIdAndUpdate returns null if no document matched — it does not throw.
 If you call .toString() or access a field on the result without checking,
 you get a TypeError crash with a 500 instead of a clean 404.
 Always add: if (!doc) throw new ApiError(404, 'Not found') immediately after.
+
+---
+
+## Phase 3 — CI/CD and Workflow Hygiene
+
+### Split CI by domain (client vs server)
+Keeping frontend and backend checks in separate workflows makes Actions history
+easier to read and debug. A failed server test no longer hides client lint/build,
+and each pipeline can evolve independently.
+
+### Use path filters to avoid unnecessary workflow runs
+Large repos should not run all pipelines on every commit.
+Client workflow should watch client/**, server workflow should watch server/**.
+Also include each workflow file path in its own filter so workflow changes still execute.
+
+### Add concurrency cancellation for fast feedback on active branches
+When multiple commits are pushed quickly, older runs become stale.
+Use concurrency with cancel-in-progress: true to automatically cancel outdated runs
+and keep only the newest run per branch/ref.
+
+### Keep secrets only where needed
+Only the server test workflow needs sensitive environment secrets.
+Client lint/build should stay secret-free to reduce risk and simplify maintenance.
+
