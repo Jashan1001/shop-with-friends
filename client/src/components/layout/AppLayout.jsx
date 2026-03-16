@@ -10,10 +10,12 @@ export default function AppLayout({ children }) {
   const [showCreate, setShowCreate] = useState(false)
   const queryClient = useQueryClient()
 
+  // Use staleTime: 0 so data is always fresh — React Query deduplicates
+  // the network request if DashboardPage already fetched it
   const { data: rooms = [] } = useQuery({
     queryKey: ['rooms'],
     queryFn: () => getRooms().then((r) => r.data.rooms),
-    staleTime: 60_000,
+    staleTime: 0,
   })
 
   const handleRoomCreated = (newRoom) => {
@@ -23,12 +25,12 @@ export default function AppLayout({ children }) {
 
   return (
     <div className="flex h-screen overflow-hidden bg-cream">
-      {/* Desktop sidebar — hidden on mobile */}
+      {/* Desktop sidebar */}
       <div className="hidden lg:flex flex-shrink-0">
         <Sidebar rooms={rooms} onCreateRoom={() => setShowCreate(true)} />
       </div>
 
-      {/* Main content area */}
+      {/* Main content */}
       <div className="flex-1 overflow-y-auto pb-16 lg:pb-0">
         {children}
       </div>

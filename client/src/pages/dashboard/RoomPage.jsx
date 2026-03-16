@@ -15,6 +15,7 @@ import Avatar from '../../components/ui/Avatar'
 import { stagger, slideUp } from '../../animations/variants'
 import { useRoom } from '../../hooks/useRoom'
 import { ProductCardSkeleton } from '../../components/ui/Skeleton'
+import ProductFeed from '../../components/products/ProductFeed'
 import { getRoomIconOption } from '../../utils/roomIcons'
 
 // Mobile tab options
@@ -135,47 +136,17 @@ export default function RoomPage() {
   )
 
   // ─── Shared sub-components ─────────────────────────────────────
-
-  const ProductFeedContent = (
-    <>
-      {productsLoading && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
-          {[...Array(3)].map((_, i) => <ProductCardSkeleton key={i} />)}
-        </div>
-      )}
-      {!productsLoading && sortedProducts.length === 0 && (
-        <motion.div
-          variants={slideUp} initial="hidden" animate="visible"
-          className="border-[2.5px] border-black border-dashed p-16 text-center"
-        >
-          <div className="w-14 h-14 bg-yellow border-[2.5px] border-black mx-auto flex items-center justify-center mb-3 shadow-brut">
-            <Package size={24} className="text-black" />
-          </div>
-          <h3 className="font-display text-xl font-bold mb-2">No products yet</h3>
-          <p className="font-body text-muted text-sm">Add the first product to start voting.</p>
-        </motion.div>
-      )}
-      {!productsLoading && sortedProducts.length > 0 && (
-        <motion.div
-          variants={stagger} initial="hidden" animate="visible"
-          className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5"
-        >
-          {sortedProducts.map((product) => (
-            <ProductCard
-              key={product._id}
-              product={product}
-              onClick={handleProductClick}
-              onVoteUpdate={handleVoteUpdate}
-              onDelete={handleProductDeleted}
-              onStatusUpdate={handleStatusUpdate}
-              isRoomOwner={isOwner}
-              isNew={newProductIds.has(product._id)}
-            />
-          ))}
-        </motion.div>
-      )}
-    </>
-  )
+  // ProductFeed is a standalone component — passes all needed props
+  const productFeedProps = {
+    products: sortedProducts,
+    isLoading: productsLoading,
+    isOwner,
+    newProductIds,
+    onProductClick: handleProductClick,
+    onVoteUpdate: handleVoteUpdate,
+    onDelete: handleProductDeleted,
+    onStatusUpdate: handleStatusUpdate,
+  }
 
   const MembersList = (
     <div className="p-4 space-y-1">
@@ -374,7 +345,7 @@ export default function RoomPage() {
             </button>
           </div>
           <div className="flex-1 overflow-y-auto p-6">
-            {ProductFeedContent}
+            <ProductFeed {...productFeedProps} />
           </div>
         </div>
 
@@ -446,7 +417,7 @@ export default function RoomPage() {
         {/* Tab content */}
         <div className="flex-1 overflow-y-auto">
           {mobileTab === 'Products' && (
-            <div className="p-4">{ProductFeedContent}</div>
+            <div className="p-4"><ProductFeed {...productFeedProps} /></div>
           )}
           {mobileTab === 'Comments' && (
             <div className="flex flex-col h-full">

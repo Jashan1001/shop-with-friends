@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
-import { Plus, ShoppingCart, Zap } from 'lucide-react'
+import { Plus, ShoppingCart, Zap, ShoppingBag, Users, ThumbsUp } from 'lucide-react'
 import { getRooms } from '../../api/rooms.api'
 import RoomCard from '../../components/rooms/RoomCard'
 import CreateRoomModal from '../../components/rooms/CreateRoomModal'
@@ -24,12 +24,15 @@ export default function DashboardPage() {
     toast.success('Room created!')
   }
 
+  // Derived stats from room data
+  const totalMembers = rooms.reduce((acc, r) => acc + (r.members?.length || 0), 0)
+
   return (
     <AppLayout>
       <div className="px-6 lg:px-10 py-8">
 
         {/* Page header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="font-display text-3xl lg:text-4xl font-bold">Your Rooms</h1>
             <p className="font-body text-muted mt-1 flex items-center gap-2 text-sm">
@@ -45,6 +48,25 @@ export default function DashboardPage() {
             New Room
           </button>
         </div>
+
+        {/* Stats row — shown when there's data */}
+        {!isLoading && rooms.length > 0 && (
+          <div className="grid grid-cols-3 gap-4 mb-8">
+            {[
+              { label: 'Total Rooms', value: rooms.length, icon: ShoppingBag, color: 'bg-yellow' },
+              { label: 'Total Members', value: totalMembers, icon: Users, color: 'bg-blue' },
+              { label: 'Active Now', value: rooms.filter(r => r.members?.length > 1).length, icon: ThumbsUp, color: 'bg-lime' },
+            ].map(({ label, value, icon: Icon, color }) => (
+              <div key={label} className="bg-white border-[2.5px] border-black shadow-brut p-4">
+                <div className={`w-8 h-8 ${color} border-[2px] border-black flex items-center justify-center mb-3`}>
+                  <Icon size={14} className="text-black" />
+                </div>
+                <p className="font-mono text-2xl font-bold leading-none mb-1">{value}</p>
+                <p className="font-mono text-[10px] uppercase tracking-widest text-muted">{label}</p>
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Loading skeletons */}
         {isLoading && (
