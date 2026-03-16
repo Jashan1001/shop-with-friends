@@ -5,7 +5,7 @@ const cors = require('cors');
 const morgan = require('morgan');
 
 const authRoutes = require('./routes/authRoutes');
-const { globalLimiter } = require('./middleware/rateLimiter');
+const { globalLimiter, scrapeLimiter } = require('./middleware/rateLimiter')
 const roomRoutes = require('./routes/roomRoutes');
 const productRoutes = require('./routes/productRoutes');
 const voteRoutes = require('./routes/voteRoutes');
@@ -66,7 +66,7 @@ app.use('/api', globalLimiter); // Rate limit all API routes — must be before 
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/rooms', roomRoutes);
 // Scrape must come BEFORE /:id routes to avoid Express matching "scrape" as an ID
-app.post('/api/v1/products/scrape', protect, scrapeUrl);
+app.post('/api/v1/products/scrape', scrapeLimiter, protect, scrapeUrl)
 app.use('/api/v1/rooms/:roomId/products', productRoutes);
 app.use('/api/v1/products/:id/vote', voteRoutes);
 app.use('/api/v1/products/:id/comments', commentRoutes);

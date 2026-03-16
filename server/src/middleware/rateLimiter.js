@@ -1,4 +1,4 @@
-const rateLimit = require('express-rate-limit');
+const rateLimit = require('express-rate-limit')
 
 // Strict limiter for auth — brute force protection
 const authLimiter = rateLimit({
@@ -8,7 +8,17 @@ const authLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   skip: () => process.env.NODE_ENV === 'test',
-});
+})
+
+// Scrape limiter — prevents using the server as an outbound request proxy
+const scrapeLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 10,
+  message: { success: false, message: 'Too many scrape requests, slow down' },
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: () => process.env.NODE_ENV === 'test',
+})
 
 // General limiter for everything else
 const globalLimiter = rateLimit({
@@ -18,6 +28,6 @@ const globalLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   skip: () => process.env.NODE_ENV === 'test',
-});
+})
 
-module.exports = { authLimiter, globalLimiter };
+module.exports = { authLimiter, scrapeLimiter, globalLimiter }
