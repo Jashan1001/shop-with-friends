@@ -85,10 +85,12 @@ exports.updateProduct = async (req, res, next) => {
       throw new ApiError(403, 'You can only edit your own products')
     }
 
+    // Destructure only allowed fields — prevents mass assignment of roomId, addedBy, status
+    const { title, price, image, link, description } = req.body
     const updated = await Product.findByIdAndUpdate(
       req.params.id,
-      { ...req.body },
-      { new: true }
+      { title, price, image, link, description },
+      { new: true, omitUndefined: true }
     ).populate('addedBy', 'name username')
 
     res.json({ success: true, product: updated })
@@ -133,6 +135,8 @@ exports.updateStatus = async (req, res, next) => {
       { status },
       { new: true }
     ).populate('addedBy', 'name username')
+
+    if (!product) throw new ApiError(404, 'Product not found')
 
     getIO().to(`room:${product.roomId.toString()}`).emit('product:updated', product)
 

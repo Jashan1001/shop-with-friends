@@ -1,0 +1,8 @@
+# Audit/build artifact archives — not part of source history
+*.zip
+*.docx
+*.doc
+
+# Temp review folders
+_review/
+_verify/

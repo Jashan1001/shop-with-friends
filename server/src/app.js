@@ -62,6 +62,7 @@ if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 }
 
+app.use('/api', globalLimiter); // Rate limit all API routes — must be before any route handler
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/rooms', roomRoutes);
 // Scrape must come BEFORE /:id routes to avoid Express matching "scrape" as an ID
@@ -71,11 +72,10 @@ app.use('/api/v1/products/:id/vote', voteRoutes);
 app.use('/api/v1/products/:id/comments', commentRoutes);
 app.use('/api/v1/products/:id/reactions', reactionRoutes);
 app.use('/api/v1/users', userRoutes);
-app.use('/api', globalLimiter);
 
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 
-const SENSITIVE_ERROR_PATTERN = /cloud_name|api_key|api_secret|mongodb\+srv|password|secret|token|jwt|signature|credential/i;
+const SENSITIVE_ERROR_PATTERN = /cloud_name|api_key|api_secret|mongodb\+srv|jwt_secret|jwt_refresh_secret|signature|credential/i;
 
 function sanitizeErrorMessage(message) {
   if (!message || typeof message !== 'string') return 'Internal server error';

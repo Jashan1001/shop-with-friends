@@ -1,5 +1,9 @@
 const Room = require('../models/Room')
 const User = require('../models/User')
+const Product = require('../models/Product')
+const Vote = require('../models/Vote')
+const Comment = require('../models/Comment')
+const Reaction = require('../models/Reaction')
 const ApiError = require('../utils/apiError')
 const generateInviteCode = require('../utils/generateInviteCode')
 const { getIO } = require('../socket/socketHandlers')
@@ -60,10 +64,12 @@ exports.getRoom = async (req, res, next) => {
 // --- UPDATE ROOM ---
 exports.updateRoom = async (req, res, next) => {
   try {
+    // Destructure only allowed fields — prevents mass assignment of createdBy, members, inviteCode
+    const { name, description, emoji } = req.body
     const room = await Room.findByIdAndUpdate(
       req.params.roomId,
-      { ...req.body },
-      { new: true } // return updated document
+      { name, description, emoji },
+      { new: true, omitUndefined: true }
     )
 
     res.json({ success: true, room })
@@ -80,6 +86,12 @@ exports.deleteRoom = async (req, res, next) => {
       roomId: req.params.roomId,
     })
 
+    // Cascade delete: remove all data associated with this room
+    const productIds = await Product.find({ roomId: req.params.roomId }).distinct('_id')
+    await Vote.deleteMany({ productId: { $in: productIds } })
+    await Comment.deleteMany({ roomId: req.params.roomId })
+    await Reaction.deleteMany({ roomId: req.params.roomId })
+    await Product.deleteMany({ roomId: req.params.roomId })
     await Room.findByIdAndDelete(req.params.roomId)
 
     // Remove room from all members' rooms arrays
@@ -143,13 +155,23 @@ exports.previewRoom = async (req, res, next) => {
   try {
     const room = await Room.findOne({
       inviteCode: req.params.code.toUpperCase(),
-    })
-      .populate('members', 'name username')
-      .populate('createdBy', 'name username')
+    }).populate('createdBy', 'name username')
 
     if (!room) throw new ApiError(404, 'Invalid invite code')
 
-    res.json({ success: true, room })
+    // Return minimal info only — do NOT expose the member list to unauthenticated previews
+    res.json({
+      success: true,
+      room: {
+        _id: room._id,
+        name: room.name,
+        emoji: room.emoji,
+        description: room.description,
+        memberCount: room.members.length,
+        inviteCode: room.inviteCode,
+        createdBy: room.createdBy,
+      },
+    })
   } catch (err) {
     next(err)
   }

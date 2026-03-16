@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 const User = require('../models/User');
 const ApiError = require('../utils/apiError');
 
@@ -13,7 +14,10 @@ const generateTokens = (userId) => {
   const refreshToken = jwt.sign(
     { id: userId },
     process.env.JWT_REFRESH_SECRET,
-    { expiresIn: process.env.JWT_REFRESH_EXPIRES_IN } // 7d
+    {
+      expiresIn: process.env.JWT_REFRESH_EXPIRES_IN, // 7d
+      jwtid: crypto.randomUUID(), // Ensure rotation always generates a distinct token
+    }
   );
 
   return { accessToken, refreshToken };
@@ -149,7 +153,8 @@ exports.logout = async (req, res, next) => {
 // --- GET ME ---
 exports.getMe = async (req, res, next) => {
   try {
-    const user = await User.findById(req.user.id);
+    const user = await User.findById(req.user.id)
+      .select('name username email bio avatar createdAt');
     res.json({ success: true, user });
   } catch (err) {
     next(err);

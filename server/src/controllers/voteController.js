@@ -36,9 +36,7 @@ exports.removeVote = async (req, res, next) => {
   try {
     const { id: productId } = req.params
 
-    const voteDoc = await Vote.findOne({ productId, userId: req.user.id })
     const product = await Product.findById(productId)
-
     await Vote.findOneAndDelete({ productId, userId: req.user.id })
 
     const votes = await Vote.find({ productId })
