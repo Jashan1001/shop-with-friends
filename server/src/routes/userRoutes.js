@@ -6,6 +6,7 @@ const {
   uploadAvatar,
   checkUsername,
   getPublicProfile,
+  deleteAccount,
 } = require('../controllers/userController')
 const { protect } = require('../middleware/authMiddleware')
 const { authLimiter } = require('../middleware/rateLimiter')
@@ -35,5 +36,5 @@ router.use(protect)
 router.put('/profile',  validate(profileSchema),  updateProfile)
 router.put('/password', validate(passwordSchema), changePassword)
 router.post('/avatar',  multerAvatar,             uploadAvatar)
-
+router.delete('/me', deleteAccount)
 module.exports = router

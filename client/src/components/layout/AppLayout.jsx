@@ -5,6 +5,24 @@ import Sidebar from './Sidebar'
 import MobileNav from './MobileNav'
 import CreateRoomModal from '../rooms/CreateRoomModal'
 import toast from 'react-hot-toast'
+import { useSocketStore } from '../../store/socketStore'
+import { useAuthStore } from '../../store/authStore'
+import { WifiOff } from 'lucide-react'
+
+function DisconnectBanner() {
+  const socket = useSocketStore((s) => s.socket)
+  const { isLoggedIn } = useAuthStore()
+
+  // Only show when logged in and socket has dropped
+  if (!isLoggedIn || socket?.connected !== false) return null
+
+  return (
+    <div className="bg-coral text-white font-mono text-xs px-4 py-2 flex items-center gap-2 justify-center">
+      <WifiOff size={12} />
+      Reconnecting to real-time server...
+    </div>
+  )
+}
 
 export default function AppLayout({ children }) {
   const [showCreate, setShowCreate] = useState(false)
@@ -24,19 +42,23 @@ export default function AppLayout({ children }) {
   }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-cream">
-      {/* Desktop sidebar */}
-      <div className="hidden lg:flex flex-shrink-0">
-        <Sidebar rooms={rooms} onCreateRoom={() => setShowCreate(true)} />
-      </div>
+    <div className="flex h-screen overflow-hidden bg-cream flex-col">
+      <DisconnectBanner />
 
-      {/* Main content */}
-      <div className="flex-1 overflow-y-auto pb-16 lg:pb-0">
-        {children}
-      </div>
+      <div className="flex flex-1 overflow-hidden">
+        {/* Desktop sidebar */}
+        <div className="hidden lg:flex flex-shrink-0">
+          <Sidebar rooms={rooms} onCreateRoom={() => setShowCreate(true)} />
+        </div>
 
-      {/* Mobile bottom nav */}
-      <MobileNav onCreateRoom={() => setShowCreate(true)} />
+        {/* Main content */}
+        <div className="flex-1 overflow-y-auto pb-16 lg:pb-0">
+          {children}
+        </div>
+
+        {/* Mobile bottom nav */}
+        <MobileNav onCreateRoom={() => setShowCreate(true)} />
+      </div>
 
       {showCreate && (
         <CreateRoomModal

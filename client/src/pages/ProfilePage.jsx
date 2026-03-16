@@ -10,7 +10,7 @@ import { updateProfile, changePassword, uploadAvatar } from '../api/users.api'
 import { useAuthStore } from '../store/authStore'
 import errorMessage from '../utils/errorMessage'
 import { slideUp, stagger } from '../animations/variants'
-
+import { updateProfile, changePassword, uploadAvatar, deleteAccount } from '../api/users.api'
 const profileSchema = z.object({
   name: z.string().min(1, 'Name is required').max(50),
   bio:  z.string().max(160).optional(),
@@ -240,15 +240,25 @@ export default function ProfilePage() {
           </form>
         </div>
 
-        {/* Danger zone */}
+        {/* Danger Zone */}
         <div className="border-[2.5px] border-coral p-6">
           <h2 className="font-display text-xl font-bold text-coral mb-2">Danger Zone</h2>
           <p className="font-body text-sm text-muted mb-4">
-            Once you delete your account, there is no going back.
+            Permanently deletes your account, all rooms you own, and all your content.
+            This cannot be undone.
           </p>
           <button
             className="bg-coral text-white border-[2.5px] border-black font-body font-semibold text-sm px-6 py-2.5 shadow-brut hover:shadow-brut-lg transition-shadow"
-            onClick={() => toast.error('Account deletion coming in v2')}
+            onClick={() => {
+              if (window.confirm('This will permanently delete your account and everything you own. Are you absolutely sure?')) {
+                deleteAccount()
+                  .then(() => {
+                    useAuthStore.getState().logout()
+                    window.location.href = '/'
+                  })
+                  .catch(() => toast.error('Failed to delete account'))
+              }
+            }}
           >
             Delete Account
           </button>

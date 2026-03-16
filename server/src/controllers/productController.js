@@ -172,3 +172,24 @@ exports.updateStatus = async (req, res, next) => {
     next(err)
   }
 }
+
+// --- UPLOAD PRODUCT IMAGE ---
+exports.uploadProductImage = async (req, res, next) => {
+  try {
+    const { roomId, id: productId } = req.params
+
+    if (!req.file) {
+      throw new ApiError(400, 'No image file provided')
+    }
+
+    const product = await Product.findOne({ _id: productId, roomId })
+    if (!product) {
+      throw new ApiError(404, 'Product not found in this room')
+    }
+
+    const imageUrl = req.file.path
+    res.json({ success: true, imageUrl })
+  } catch (err) {
+    next(err)
+  }
+}

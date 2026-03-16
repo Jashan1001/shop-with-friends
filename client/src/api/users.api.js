@@ -13,3 +13,5 @@ export const uploadAvatar = (file) => {
 // Username availability check (debounced on client)
 export const checkUsername = (username) =>
   api.get('/users/check-username', { params: { username } })
+
+export const deleteAccount = () => api.delete('/users/me')

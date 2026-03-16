@@ -12,44 +12,35 @@ export const useRoom = (roomId, onNewProduct) => {
 
     socket.emit('join:room', roomId)
 
-    // New product added by someone else
     socket.on('product:added', (product) => {
       queryClient.setQueryData(['products', roomId], (old) => {
         const exists = old?.some((p) => p._id === product._id)
         if (exists) return old
         return [product, ...(old || [])]
       })
-
-      // Trigger pulse on newly added cards.
       if (onNewProduct) onNewProduct(product._id)
     })
 
-    // Product updated (status change etc)
     socket.on('product:updated', (product) => {
       queryClient.setQueryData(['products', roomId], (old) =>
         old?.map((p) => (p._id === product._id ? { ...p, ...product } : p))
       )
     })
 
-    // Product deleted
     socket.on('product:deleted', ({ productId }) => {
       queryClient.setQueryData(['products', roomId], (old) =>
         old?.filter((p) => p._id !== productId)
       )
     })
 
-    // Vote updated — preserve existing userVote from cache (server doesn't send per-user vote)
     socket.on('vote:updated', ({ productId, upvotes, downvotes }) => {
       queryClient.setQueryData(['products', roomId], (old) =>
         old?.map((p) =>
           p._id === productId ? { ...p, upvotes, downvotes } : p
-          // Note: intentionally NOT overwriting p.userVote here
-          // The optimistic update in VoteButtons.jsx sets the correct userVote
         )
       )
     })
 
-    // Comment added
     socket.on('comment:added', (comment) => {
       queryClient.setQueryData(['comments', comment.productId], (old) => {
         const exists = old?.some((c) => c._id === comment._id)
@@ -58,32 +49,43 @@ export const useRoom = (roomId, onNewProduct) => {
       })
     })
 
-    // Comment deleted
     socket.on('comment:deleted', ({ commentId, productId }) => {
       queryClient.setQueryData(['comments', productId], (old) =>
         old?.filter((c) => c._id !== commentId)
       )
     })
 
-    // Member joined
+    // NEW: update edited comment text in cache
+    socket.on('comment:edited', ({ commentId, productId, text, edited }) => {
+      queryClient.setQueryData(['comments', productId], (old) =>
+        old?.map((c) =>
+          c._id === commentId ? { ...c, text, edited } : c
+        )
+      )
+    })
+
     socket.on('member:joined', () => {
       queryClient.invalidateQueries(['room', roomId])
     })
 
-    // Reaction burst — update reaction cache for the affected product
     socket.on('reaction:burst', ({ productId, reactions }) => {
       queryClient.setQueryData(['reactions', productId], reactions)
     })
 
+    // NEW: update room name/emoji/description in cache
+    socket.on('room:updated', ({ roomId: updatedRoomId, name, description, emoji }) => {
+      queryClient.setQueryData(['room', updatedRoomId], (old) =>
+        old ? { ...old, name, description, emoji } : old
+      )
+    })
+
     socket.on('room:deleted', ({ roomId: deletedRoomId }) => {
-      // Only redirect if THIS room was deleted, not another room the user belongs to
       if (deletedRoomId === roomId) {
         window.location.href = '/dashboard'
       }
     })
 
     socket.on('member:removed', ({ userId: removedUserId }) => {
-      // Only redirect the user who was actually removed — not everyone in the room
       const currentUser = useAuthStore.getState().user
       const currentUserId = currentUser?.id || currentUser?._id
       if (removedUserId === currentUserId) {
@@ -93,9 +95,11 @@ export const useRoom = (roomId, onNewProduct) => {
 
     return () => {
       socket.emit('leave:room', roomId)
-      ;['product:added', 'product:updated', 'product:deleted',
-        'vote:updated', 'comment:added', 'comment:deleted',
-        'member:joined', 'reaction:burst', 'room:deleted', 'member:removed'
+      ;[
+        'product:added', 'product:updated', 'product:deleted',
+        'vote:updated', 'comment:added', 'comment:deleted', 'comment:edited',
+        'member:joined', 'reaction:burst', 'room:updated',
+        'room:deleted', 'member:removed',
       ].forEach((e) => socket.off(e))
     }
   }, [socket, roomId, onNewProduct])

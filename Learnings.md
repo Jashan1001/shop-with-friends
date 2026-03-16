@@ -277,3 +277,13 @@ and keep only the newest run per branch/ref.
 Only the server test workflow needs sensitive environment secrets.
 Client lint/build should stay secret-free to reduce risk and simplify maintenance.
 
+### Product image uploads work best as a two-step flow
+Create the product first to get a real productId, then upload the file to a
+dedicated image route, then patch the product with the returned Cloudinary URL.
+This avoids mixing binary upload concerns into the main create-product payload.
+
+### FormData uploads should not set multipart Content-Type manually
+When sending FormData with axios, let axios set the Content-Type header so it
+includes the boundary token automatically. Manually setting multipart/form-data
+without a boundary can cause upload failures.
+

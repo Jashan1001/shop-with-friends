@@ -1,14 +1,14 @@
-import { useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
-import { X, Search, Loader2 } from 'lucide-react'
-import { addProduct } from '../../api/products.api'
-import errorMessage from '../../utils/errorMessage'
-import { scaleIn } from '../../animations/variants'
-import { useProductScraper } from '../../hooks/useProductScraper'
-import toast from 'react-hot-toast'
+import { useState }                    from 'react'
+import { motion, AnimatePresence }     from 'framer-motion'
+import { useForm }                     from 'react-hook-form'
+import { zodResolver }                 from '@hookform/resolvers/zod'
+import { z }                           from 'zod'
+import { X, Search, Loader2, ImagePlus } from 'lucide-react'
+import toast                           from 'react-hot-toast'
+import { addProduct, uploadProductImage } from '../../api/products.api'
+import errorMessage                    from '../../utils/errorMessage'
+import { scaleIn }                     from '../../animations/variants'
+import { useProductScraper }           from '../../hooks/useProductScraper'
 
 const schema = z.object({
   title:       z.string().min(1, 'Title is required').max(200),
@@ -21,9 +21,12 @@ const schema = z.object({
 const PLATFORMS = ['amazon', 'flipkart', 'myntra', 'other']
 
 export default function AddProductModal({ roomId, onClose, onAdded }) {
-  const [loading, setLoading] = useState(false)
-  const [serverError, setServerError] = useState('')
-  const [urlInput, setUrlInput] = useState('')
+  const [loading, setLoading]             = useState(false)
+  const [serverError, setServerError]     = useState('')
+  const [urlInput, setUrlInput]           = useState('')
+  const [imageFile, setImageFile]         = useState(null)
+  const [imagePreview, setImagePreview]   = useState('')
+  const [scrapedImage, setScrapedImage]   = useState('')
   const { scrape, loading: scrapeLoading, error: scrapeError } = useProductScraper()
 
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm({
@@ -31,34 +34,61 @@ export default function AddProductModal({ roomId, onClose, onAdded }) {
     defaultValues: { platform: 'other' },
   })
 
+  // Pick the best image to show: local file upload > scraped URL
+  const previewSrc = imagePreview || scrapedImage
+
   const handleScrape = async () => {
     if (!urlInput.trim()) return
     const data = await scrape(urlInput)
     if (!data) return
 
-    // Auto-fill form fields from scraped data
-    if (data.title)    setValue('title', data.title)
-    if (data.price)    setValue('price', String(data.price))
-    if (data.platform) setValue('platform', data.platform)
+    if (data.title)       setValue('title', data.title)
+    if (data.price)       setValue('price', String(data.price))
+    if (data.platform)    setValue('platform', data.platform)
     if (data.description) setValue('description', data.description)
     setValue('link', urlInput)
+    if (data.image) setScrapedImage(data.image)
 
     if (data.error) toast.error(data.error)
     else toast.success('Page scraped — check and edit the details')
+  }
+
+  const handleImageFile = (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setImageFile(file)
+    setImagePreview(URL.createObjectURL(file))
   }
 
   const onSubmit = async (data) => {
     setLoading(true)
     setServerError('')
     try {
+      // 1. Create the product first (image field left empty for now)
       const payload = {
         ...data,
         price: data.price ? parseFloat(data.price) : undefined,
-        image: '', // image upload is separate (Cloudinary)
+        image: scrapedImage, // use scraped URL as default
       }
       const res = await addProduct(roomId, payload)
+      const product = res.data.product
+
+      // 2. If user picked a local file, upload it and patch the product
+      if (imageFile) {
+        try {
+          const imgRes = await uploadProductImage(roomId, product._id, imageFile)
+          product.image = imgRes.data.imageUrl
+
+          // Patch the product with the Cloudinary URL
+          const { updateProduct } = await import('../../api/products.api')
+          await updateProduct(roomId, product._id, { image: product.image })
+        } catch {
+          toast.error('Product added but image upload failed')
+        }
+      }
+
       toast.success('Product added!')
-      onAdded(res.data.product)
+      onAdded(product)
       onClose()
     } catch (err) {
       const message = errorMessage(err)
@@ -102,77 +132,94 @@ export default function AddProductModal({ roomId, onClose, onAdded }) {
               </div>
             )}
 
-            {/* URL Scraper */}
+            {/* URL scraper */}
             <div className="mb-5">
               <label className="font-mono text-[11px] font-bold uppercase tracking-widest block mb-1.5">
-                Paste Product URL (auto-fill)
+                Paste Product URL
               </label>
               <div className="flex gap-2">
                 <input
                   value={urlInput}
                   onChange={(e) => setUrlInput(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleScrape())}
+                  onKeyDown={(e) => e.key === 'Enter' && handleScrape()}
                   placeholder="https://amazon.in/..."
                   className="flex-1 border-[2.5px] border-black bg-white font-body text-sm px-3 py-2.5 outline-none focus:shadow-brut transition-shadow"
                 />
                 <button
                   type="button"
                   onClick={handleScrape}
-                  disabled={scrapeLoading || !urlInput.trim()}
-                  className="flex items-center gap-1.5 bg-black text-white border-[2.5px] border-black font-body font-semibold text-sm px-3 py-2.5 shadow-brut hover:shadow-brut-lg transition-shadow disabled:opacity-50"
+                  disabled={scrapeLoading}
+                  className="flex items-center gap-1.5 bg-black text-white font-body text-sm px-3 py-2.5 border-[2.5px] border-black hover:bg-black/80 disabled:opacity-50 transition-colors"
                 >
-                  {scrapeLoading ? <Loader2 size={14} className="animate-spin" /> : <Search size={14} />}
-                  {scrapeLoading ? '' : 'Fill'}
+                  {scrapeLoading
+                    ? <Loader2 size={14} className="animate-spin" />
+                    : <Search size={14} />}
+                  Fetch
                 </button>
               </div>
               {scrapeError && (
-                <p className="font-mono text-[11px] text-coral uppercase mt-1">{scrapeError}</p>
+                <p className="font-mono text-[11px] text-coral mt-1">{scrapeError}</p>
               )}
-              <p className="font-mono text-[10px] text-muted mt-1">
-                Works best with open graph tags. Amazon may block — fill manually as fallback.
-              </p>
-            </div>
-
-            <div className="border-t-[2px] border-black/10 pt-4 mb-4">
-              <span className="font-mono text-[10px] text-muted uppercase tracking-widest">
-                Or fill in manually
-              </span>
             </div>
 
             <form onSubmit={handleSubmit(onSubmit)}>
 
-              {/* Platform */}
+              {/* Image preview + upload */}
               <div className="mb-4">
-                <label className="font-mono text-[11px] font-bold uppercase tracking-widest block mb-2">
-                  Platform
+                <label className="font-mono text-[11px] font-bold uppercase tracking-widest block mb-1.5">
+                  Product Image
                 </label>
-                <div className="flex gap-2 flex-wrap">
-                  {PLATFORMS.map((p) => (
-                    <label key={p} className="cursor-pointer">
-                      <input {...register('platform')} type="radio" value={p} className="sr-only" />
-                      <span
-                        className={`font-mono text-xs uppercase border-[2.5px] border-black px-3 py-1.5 block transition-colors
-                          ${watch('platform') === p ? 'bg-yellow font-bold shadow-brut' : 'bg-white hover:bg-cream'}`}
-                      >
-                        {p}
-                      </span>
-                    </label>
-                  ))}
-                </div>
+
+                {previewSrc ? (
+                  <div className="relative border-[2.5px] border-black aspect-video overflow-hidden mb-2">
+                    <img src={previewSrc} alt="preview" className="w-full h-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => { setImageFile(null); setImagePreview(''); setScrapedImage('') }}
+                      className="absolute top-2 right-2 bg-white border-[2px] border-black w-6 h-6 flex items-center justify-center hover:bg-coral hover:text-white"
+                    >
+                      <X size={12} />
+                    </button>
+                  </div>
+                ) : (
+                  <label className="flex flex-col items-center justify-center border-[2.5px] border-dashed border-black aspect-video cursor-pointer hover:bg-cream transition-colors mb-2">
+                    <ImagePlus size={24} className="text-black/30 mb-2" />
+                    <span className="font-mono text-[11px] text-muted">Click to upload image</span>
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      className="hidden"
+                      onChange={handleImageFile}
+                    />
+                  </label>
+                )}
+
+                {/* Allow replacing with a file even after scrape */}
+                {previewSrc && (
+                  <label className="flex items-center gap-1.5 font-mono text-[11px] text-muted cursor-pointer hover:text-black transition-colors">
+                    <ImagePlus size={12} />
+                    Replace with your own image
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      className="hidden"
+                      onChange={handleImageFile}
+                    />
+                  </label>
+                )}
               </div>
 
               {/* Title */}
               <div className="mb-4">
                 <label className="font-mono text-[11px] font-bold uppercase tracking-widest block mb-1.5">
-                  Product Title *
+                  Title <span className="text-coral">*</span>
                 </label>
                 <input
                   {...register('title')}
-                  placeholder="MacBook Air M2"
                   className="w-full border-[2.5px] border-black bg-white font-body text-sm px-3 py-2.5 outline-none focus:shadow-brut transition-shadow"
                 />
                 {errors.title && (
-                  <p className="font-mono text-[11px] text-coral uppercase mt-1">{errors.title.message}</p>
+                  <p className="font-mono text-[11px] text-coral mt-1">{errors.title.message}</p>
                 )}
               </div>
 
@@ -184,42 +231,51 @@ export default function AddProductModal({ roomId, onClose, onAdded }) {
                 <input
                   {...register('price')}
                   type="number"
-                  placeholder="114900"
+                  min="0"
+                  step="0.01"
+                  placeholder="0.00"
                   className="w-full border-[2.5px] border-black bg-white font-body text-sm px-3 py-2.5 outline-none focus:shadow-brut transition-shadow"
                 />
               </div>
 
-              {/* Link */}
+              {/* Platform */}
               <div className="mb-4">
                 <label className="font-mono text-[11px] font-bold uppercase tracking-widest block mb-1.5">
-                  Product Link (optional)
+                  Platform
                 </label>
-                <input
-                  {...register('link')}
-                  placeholder="https://amazon.in/..."
-                  className="w-full border-[2.5px] border-black bg-white font-body text-sm px-3 py-2.5 outline-none focus:shadow-brut transition-shadow"
-                />
+                <select
+                  {...register('platform')}
+                  className="w-full border-[2.5px] border-black bg-white font-body text-sm px-3 py-2.5 outline-none focus:shadow-brut transition-shadow appearance-none"
+                >
+                  {PLATFORMS.map((p) => (
+                    <option key={p} value={p}>{p.charAt(0).toUpperCase() + p.slice(1)}</option>
+                  ))}
+                </select>
               </div>
 
-              {/* Notes */}
-              <div className="mb-6">
+              {/* Description */}
+              <div className="mb-5">
                 <label className="font-mono text-[11px] font-bold uppercase tracking-widest block mb-1.5">
-                  Notes (optional)
+                  Description
                 </label>
                 <textarea
                   {...register('description')}
-                  placeholder="Why this product?"
                   rows={2}
-                  className="w-full border-[2.5px] border-black bg-white font-body text-sm px-3 py-2.5 outline-none focus:shadow-brut transition-shadow resize-none"
+                  placeholder="Optional notes about this product"
+                  className="w-full border-[2.5px] border-black bg-white font-body text-sm px-3 py-2.5 outline-none focus:shadow-brut resize-none transition-shadow"
                 />
+                <p className="font-mono text-[10px] text-muted mt-1">
+                  {watch('description')?.length || 0}/500
+                </p>
               </div>
 
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-yellow border-[2.5px] border-black font-body font-semibold text-sm py-3 shadow-brut hover:shadow-brut-lg transition-shadow disabled:opacity-50"
+                className="w-full bg-yellow border-[2.5px] border-black font-body font-semibold text-sm py-3 shadow-brut hover:shadow-brut-lg transition-shadow disabled:opacity-50 flex items-center justify-center gap-2"
               >
-                {loading ? '...' : 'Add Product'}
+                {loading && <Loader2 size={14} className="animate-spin" />}
+                {loading ? 'Adding…' : 'Add Product'}
               </button>
             </form>
           </div>

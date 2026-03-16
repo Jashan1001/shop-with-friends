@@ -17,7 +17,7 @@ import { useRoom } from '../../hooks/useRoom'
 import { ProductCardSkeleton } from '../../components/ui/Skeleton'
 import ProductFeed from '../../components/products/ProductFeed'
 import { getRoomIconOption } from '../../utils/roomIcons'
-
+import Modal from '../../components/ui/Modal'
 // Mobile tab options
 const MOBILE_TABS = ['Products', 'Comments', 'Members']
 
@@ -37,6 +37,8 @@ export default function RoomPage() {
   const [mobileTab, setMobileTab] = useState('Products')
   // Mobile: comments drawer open
   const [showCommentDrawer, setShowCommentDrawer] = useState(false)
+  const [confirmModal, setConfirmModal] = useState(null)
+  // confirmModal shape: { message, onConfirm } | null
 
   const handleNewProduct = useCallback((productId) => {
     setNewProductIds((prev) => new Set([...prev, productId]))
@@ -82,26 +84,38 @@ export default function RoomPage() {
     )
   }
 
-  const handleDeleteRoom = async () => {
-    if (!window.confirm('Delete this room? This cannot be undone.')) return
-    try {
-      await deleteRoom(roomId)
-      toast.success('Room deleted')
-      navigate('/dashboard')
-    } catch {
-      toast.error('Failed to delete room')
-    }
+  const handleDeleteRoom = () => {
+    setConfirmModal({
+      message: 'Delete this room? All products, votes and comments will be permanently removed.',
+      onConfirm: async () => {
+        try {
+          await deleteRoom(roomId)
+          toast.success('Room deleted')
+          navigate('/dashboard')
+        } catch {
+          toast.error('Failed to delete room')
+        } finally {
+          setConfirmModal(null)
+        }
+      },
+    })
   }
 
-  const handleLeaveRoom = async () => {
-    if (!window.confirm('Leave this room?')) return
-    try {
-      await leaveRoom(roomId)
-      toast.success('Left room')
-      navigate('/dashboard')
-    } catch {
-      toast.error('Failed to leave room')
-    }
+  const handleLeaveRoom = () => {
+    setConfirmModal({
+      message: 'Leave this room? You can rejoin with an invite code.',
+      onConfirm: async () => {
+        try {
+          await leaveRoom(roomId)
+          toast.success('Left room')
+          navigate('/dashboard')
+        } catch {
+          toast.error('Failed to leave room')
+        } finally {
+          setConfirmModal(null)
+        }
+      },
+    })
   }
 
   const handleProductDeleted = (productId) => {
@@ -462,6 +476,29 @@ export default function RoomPage() {
           onClose={() => setShowAddProduct(false)}
           onAdded={() => {}}
         />
+      )}
+
+      {/* Confirmation modal */}
+      {confirmModal && (
+        <Modal onClose={() => setConfirmModal(null)}>
+          <div className="p-6">
+            <p className="font-body text-sm mb-6">{confirmModal.message}</p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setConfirmModal(null)}
+                className="font-body text-sm border-[2.5px] border-black px-4 py-2 shadow-brut hover:shadow-brut-lg transition-shadow"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmModal.onConfirm}
+                className="font-body text-sm bg-coral text-white border-[2.5px] border-black px-4 py-2 shadow-brut hover:shadow-brut-lg transition-shadow"
+              >
+                Confirm
+              </button>
+            </div>
+          </div>
+        </Modal>
       )}
     </div>
   )
