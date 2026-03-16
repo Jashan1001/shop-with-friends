@@ -1,8 +1,24 @@
 import axios from 'axios'
 import { useAuthStore } from '../store/authStore'
 
+// Guard: catch the most common deployment mistake — localhost URL in production
+const apiUrl = import.meta.env.VITE_API_URL
+if (!apiUrl) {
+  console.error(
+    '[CartCrew] VITE_API_URL is not set.\n' +
+    'In Vercel: Project Settings → Environment Variables → add VITE_API_URL'
+  )
+}
+if (import.meta.env.PROD && apiUrl?.includes('localhost')) {
+  console.error(
+    '[CartCrew] VITE_API_URL is pointing to localhost in a production build.\n' +
+    'Set VITE_API_URL to your Railway URL in Vercel environment variables.\n' +
+    'Current value: ' + apiUrl
+  )
+}
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
+  baseURL: apiUrl,
 })
 
 // Request interceptor — attach token to every request automatically
