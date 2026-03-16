@@ -78,55 +78,6 @@ socket event fire. Without a duplicate check in the socket
 handler, the product appears twice. Always check if the
 item already exists before adding to cache.
 
-### Zod v4 breaking change — err.errors moved to err.message
-In Zod v3, validation issues were in err.errors (array).
-In Zod v4, err.errors is undefined — issues are JSON-serialized
-inside err.message as a string. Always check package versions when
-a library's error shape doesn't match the docs.
-
-### Always check which directory you're running commands from
-Running npm run dev from shop-with-friends/ instead of shop-with-friends/server/
-causes cascading weird errors. Your terminal prompt should always show
-the correct folder before running any command.
-
-### Same error message for wrong email vs wrong password
-"Invalid email or password" for both cases intentionally.
-If you say "email not found", an attacker learns which emails are registered.
-Vague error messages = more secure auth.
-
-### next(err) needs a 4-param error handler to catch it
-Express only recognizes a function as an error handler if it has exactly
-4 parameters — (err, req, res, next). 3 params and it's treated as
-a regular middleware, so next(err) has nowhere to go.
-
-### Vite env variables must start with VITE_
-Vite strips any env variable that doesn't start with VITE_ for security.
-VITE_API_URL works, API_URL does not. Also restart the dev server
-after editing .env — Vite only reads it at startup.
-
-### ES modules vs CommonJS
-Vite projects use ES modules (import/export).
-Node projects use CommonJS (require/module.exports).
-Using module.exports in a Vite config file throws
-"module is not defined". Always check which module
-system a config file expects before writing it.
-
-### Socket.io needs the raw HTTP server, not Express app
-http.createServer(app) gives you the server explicitly.
-app.listen() creates it internally and hides it.
-Socket.io needs the raw server to attach to.
-
-### REST first, then socket emit — always
-Never emit a socket event without saving to DB first.
-If the emit happens before save and the save fails,
-users see data that doesn't exist. Save → emit → respond.
-
-### Deduplicate socket + REST cache updates
-When YOU add a product, both the REST response and the
-socket event fire. Without a duplicate check in the socket
-handler, the product appears twice. Always check if the
-item already exists before adding to cache.
-
 ### useEffect dependency arrays cause duplicate socket listeners
 If a callback passed to a custom hook is recreated every render,
 adding it to the dependency array causes the effect to re-run,
@@ -212,3 +163,93 @@ The server will catch it but the UX is better if the button itself prevents subm
 The strength indicator is cosmetic — it should never block form submission on its own.
 Only the Zod schema (min 8 chars, uppercase, number) enforces real requirements.
 The strength bar is feedback, not a gate.
+
+---
+
+## Phase 2 — Audit, Security & Real-World Bugs
+
+### Express middleware order is load-bearing
+app.use() middleware runs in the exact order it is registered.
+A rate limiter registered AFTER routes never executes — every route
+already sent a response by the time the limiter is reached.
+Rule: security middleware (rate limiters, auth guards) ALWAYS goes
+before route handlers.
+
+### Mongoose ObjectId vs string comparison
+After .populate(), a relation field becomes a JS object with an _id property.
+Comparing it to a plain string with === always returns false.
+Always use .toString() or String() when comparing Mongoose ObjectIds to strings:
+room.createdBy?._id?.toString() === user?.id
+
+### Socket.io emit to room hits ALL members — scope your client-side handlers
+When the server emits to a room channel (io.to('room:123').emit(...)),
+every member of that Socket.io room receives the event.
+Client-side handlers must check the payload's userId/roomId against the
+current user/room before acting — otherwise all users get redirected
+when one user is removed.
+
+### Mass assignment via { ...req.body } is a real attack vector
+Even with Zod validation stripping unknown keys, passing { ...req.body }
+to findByIdAndUpdate is fragile — schema changes or middleware bypass
+can expose critical fields like roomId, addedBy, createdBy.
+Always destructure only the fields you intend to update:
+const { title, price } = req.body  // then pass only these
+
+### SSRF: never trust user-supplied URLs for server-side fetching
+The scrapeMetadata endpoint takes a URL from user input and makes an
+outbound HTTP request. Without validation, an attacker can supply
+http://169.254.169.254 (AWS metadata) or http://localhost:5432 (internal DB).
+Fix: (1) HTTPS only, (2) DNS-resolve the hostname, (3) block private IP ranges.
+Always validate before fetching, not after.
+
+### Cascade deletes must be explicit in MongoDB
+MongoDB has no foreign key constraints. When you delete a Room, the associated
+Products, Votes, Comments, and Reactions are NOT automatically removed.
+You must write explicit deleteMany() calls for each related collection.
+Orphaned documents waste storage and cause reference errors over time.
+
+### React Error Boundaries must be class components
+React's getDerivedStateFromError and componentDidCatch lifecycle methods
+are only available in class components. Function components cannot be
+error boundaries. You need at least one class component in a React project
+to handle render errors gracefully.
+
+### Emoji validation must be an allowlist on the server
+The client may show a picker with only valid emojis, but anyone can hit
+the API directly with arbitrary strings. Always validate emoji fields
+against an explicit allowlist using z.enum() — never rely on client-side
+restriction alone.
+
+### Rate limit public endpoints that reveal private data
+The username availability check endpoint was public and unthrottled.
+At 200 req/15min, an attacker could enumerate 800+ usernames per hour.
+Any public endpoint that reveals information about registered users
+(existence, availability, profile) should have strict rate limiting
+or require authentication.
+
+### Zod .url() + .refine() for URL fields
+To safely validate a URL field in a Zod schema:
+link: z.string()
+  .url('Must be a valid URL')
+  .refine(u => u.startsWith('https://'), 'Must use HTTPS')
+  .optional()
+This prevents javascript:, data:, http:, and ftp: scheme attacks in href attributes.
+DOMPurify sanitizes innerHTML but NOT href — always validate URLs at the schema level.
+
+### React components that wrap the whole app must be class-based for error catching
+ErrorBoundary wraps <App /> in main.jsx. If any component inside the tree
+throws during render, getDerivedStateFromError catches it and shows a
+fallback screen instead of a blank white page. This is the only place
+you need a class component in a modern React app.
+
+### Test environment should skip non-essential external service validation
+The Cloudinary config throws at startup if credentials are placeholders.
+This is correct for production but breaks test runs which don't need Cloudinary.
+Check process.env.NODE_ENV === 'test' and skip the validation.
+Always make your app testable without requiring every external service.
+
+### Null-check after findByIdAndUpdate when you act on the result
+findByIdAndUpdate returns null if no document matched — it does not throw.
+If you call .toString() or access a field on the result without checking,
+you get a TypeError crash with a 500 instead of a clean 404.
+Always add: if (!doc) throw new ApiError(404, 'Not found') immediately after.
