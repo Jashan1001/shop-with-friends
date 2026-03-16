@@ -8,6 +8,7 @@ const {
   getPublicProfile,
 } = require('../controllers/userController')
 const { protect } = require('../middleware/authMiddleware')
+const { authLimiter } = require('../middleware/rateLimiter')
 const { uploadAvatar: multerAvatar } = require('../middleware/upload')
 const validate = require('../middleware/validate')
 const { z } = require('zod')
@@ -26,7 +27,7 @@ const passwordSchema = z.object({
 })
 
 // Public routes
-router.get('/check-username', checkUsername)
+router.get('/check-username', authLimiter, checkUsername)  // rate-limited to prevent username enumeration
 router.get('/:username', getPublicProfile)
 
 // Protected routes

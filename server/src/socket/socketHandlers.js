@@ -4,9 +4,10 @@ const Room = require('../models/Room')
 
 let io
 
+// Origins driven by environment variables — no hardcoded production URLs
+// Set CORS_ORIGINS=https://your-app.vercel.app in Railway dashboard
 const allowedOrigins = [
   'http://localhost:5173',
-  'https://cart-crew.vercel.app',
   process.env.CLIENT_URL,
   process.env.CORS_ORIGIN,
   ...(process.env.CORS_ORIGINS || '')
@@ -85,7 +86,15 @@ const initSocket = (server) => {
 
 // Export so controllers can emit events
 const getIO = () => {
-  if (!io) throw new Error('Socket.io not initialized')
+  if (!io) {
+    if (process.env.NODE_ENV === 'test') {
+      return {
+        to: () => ({ emit: () => {} }),
+        emit: () => {},
+      }
+    }
+    throw new Error('Socket.io not initialized')
+  }
   return io
 }
 

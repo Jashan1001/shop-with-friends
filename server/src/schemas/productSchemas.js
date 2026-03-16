@@ -4,7 +4,11 @@ const addProductSchema = z.object({
   title: z.string().min(1, 'Title is required').max(200),
   price: z.number().min(0).optional(),
   image: z.string().optional().default(''),
-  link: z.string().optional().default(''),
+  link: z.string()
+    .url('Must be a valid URL')
+    .refine((u) => u.startsWith('https://'), { message: 'Product links must use HTTPS' })
+    .optional()
+    .default(''),
   platform: z.enum(['amazon', 'flipkart', 'myntra', 'other']).optional().default('other'),
   description: z.string().max(500).optional().default(''),
 })

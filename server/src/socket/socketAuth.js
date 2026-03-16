@@ -2,7 +2,6 @@ const jwt = require('jsonwebtoken')
 
 const socketAuth = (socket, next) => {
   const token = socket.handshake.auth.token
-  console.log('Socket auth attempt, token:', token ? 'present' : 'missing')
 
   if (!token) {
     return next(new Error('Authentication required'))
@@ -13,7 +12,7 @@ const socketAuth = (socket, next) => {
     socket.userId = decoded.id
     next()
   } catch (err) {
-    console.log('Socket auth failed:', err.message)
+    // Do not log error details — JWT error messages can aid attackers
     next(new Error('Invalid token'))
   }
 }
