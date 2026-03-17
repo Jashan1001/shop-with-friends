@@ -180,25 +180,27 @@ export default function AddProductModal({ roomId, onClose, onAdded }) {
                     >
                       <X size={12} />
                     </button>
+                    {/* Replace button always visible on top of preview */}
+                    <label className="absolute bottom-2 left-2 flex items-center gap-1.5 bg-white border-[2px] border-black px-2 py-1 font-mono text-[10px] cursor-pointer hover:bg-yellow transition-colors">
+                      <ImagePlus size={10} />
+                      Replace image
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        className="hidden"
+                        onChange={handleImageFile}
+                      />
+                    </label>
                   </div>
                 ) : (
-                  <label className="flex flex-col items-center justify-center border-[2.5px] border-dashed border-black aspect-video cursor-pointer hover:bg-cream transition-colors mb-2">
-                    <ImagePlus size={24} className="text-black/30 mb-2" />
-                    <span className="font-mono text-[11px] text-muted">Click to upload image</span>
-                    <input
-                      type="file"
-                      accept="image/jpeg,image/png,image/webp"
-                      className="hidden"
-                      onChange={handleImageFile}
-                    />
-                  </label>
-                )}
-
-                {/* Allow replacing with a file even after scrape */}
-                {previewSrc && (
-                  <label className="flex items-center gap-1.5 font-mono text-[11px] text-muted cursor-pointer hover:text-black transition-colors">
-                    <ImagePlus size={12} />
-                    Replace with your own image
+                  <label className="flex flex-col items-center justify-center border-[2.5px] border-dashed border-black aspect-video cursor-pointer hover:bg-cream transition-colors mb-2 group">
+                    <ImagePlus size={24} className="text-black/30 mb-2 group-hover:text-black/60 transition-colors" />
+                    <span className="font-mono text-[11px] text-muted group-hover:text-black transition-colors">
+                      Click to upload image
+                    </span>
+                    <span className="font-mono text-[10px] text-muted/60 mt-1">
+                      JPG, PNG, WEBP · max 5MB
+                    </span>
                     <input
                       type="file"
                       accept="image/jpeg,image/png,image/webp"
