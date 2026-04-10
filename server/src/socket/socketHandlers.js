@@ -4,17 +4,23 @@ const Room = require('../models/Room')
 
 let io
 
+const normalizeOrigin = (origin) =>
+  typeof origin === 'string' ? origin.trim().replace(/\/$/, '') : origin
+
 // Origins driven by environment variables — no hardcoded production URLs
 // Set CORS_ORIGINS=https://your-app.vercel.app in Railway dashboard
 const allowedOrigins = [
   'http://localhost:5173',
-  process.env.CLIENT_URL,
+  'https://cart-crew.vercel.app',
+  process.env.CLIENT_URL || 'https://cart-crew.vercel.app',
   process.env.CORS_ORIGIN,
   ...(process.env.CORS_ORIGINS || '')
     .split(',')
     .map((origin) => origin.trim())
     .filter(Boolean),
 ]
+  .map(normalizeOrigin)
+  .filter(Boolean)
 
 const cartCrewVercelPreviewRegex = /^https:\/\/cart-crew(?:-[a-z0-9-]+)*\.vercel\.app$/i
 
@@ -22,13 +28,15 @@ const socketCorsOptions = {
   origin: (origin, callback) => {
     if (!origin) return callback(null, true)
 
+    const normalizedOrigin = normalizeOrigin(origin)
+
     const isAllowed =
-      allowedOrigins.includes(origin) ||
-      cartCrewVercelPreviewRegex.test(origin)
+      allowedOrigins.includes(normalizedOrigin) ||
+      cartCrewVercelPreviewRegex.test(normalizedOrigin)
 
     if (isAllowed) return callback(null, true)
 
-    console.warn(`Blocked Socket.IO CORS origin: ${origin}`)
+    console.warn(`Blocked Socket.IO CORS origin: ${normalizedOrigin}`)
     return callback(new Error('Not allowed by CORS'))
   },
   methods: ['GET', 'POST'],

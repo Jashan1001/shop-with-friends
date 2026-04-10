@@ -18,6 +18,9 @@ const app = express();
 
 app.set('trust proxy', 1);
 
+const normalizeOrigin = (origin) =>
+  typeof origin === 'string' ? origin.trim().replace(/\/$/, '') : origin
+
 const allowedOrigins = [
   'http://localhost:5173',
   'https://cart-crew.vercel.app',
@@ -27,7 +30,9 @@ const allowedOrigins = [
     .split(',')
     .map((origin) => origin.trim())
     .filter(Boolean),
-];
+]
+  .map(normalizeOrigin)
+  .filter(Boolean);
 
 const cartCrewVercelPreviewRegex = /^https:\/\/cart-crew(?:-[a-z0-9-]+)*\.vercel\.app$/i;
 
@@ -35,13 +40,15 @@ const corsOptions = {
   origin: (origin, callback) => {
     if (!origin) return callback(null, true);
 
+    const normalizedOrigin = normalizeOrigin(origin)
+
     const isAllowed =
-      allowedOrigins.includes(origin) ||
-      cartCrewVercelPreviewRegex.test(origin);
+      allowedOrigins.includes(normalizedOrigin) ||
+      cartCrewVercelPreviewRegex.test(normalizedOrigin);
 
     if (isAllowed) return callback(null, true);
 
-    console.warn(`Blocked CORS origin: ${origin}`);
+    console.warn(`Blocked CORS origin: ${normalizedOrigin}`);
     return callback(new Error('Not allowed by CORS'));
   },
   credentials: true,
