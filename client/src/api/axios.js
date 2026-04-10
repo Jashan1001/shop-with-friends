@@ -1,8 +1,24 @@
 import axios from 'axios'
 import { useAuthStore } from '../store/authStore'
 
+const normalizeApiUrl = (rawUrl) => {
+  if (!rawUrl) return rawUrl
+
+  let normalized = rawUrl.trim().replace(/\/$/, '')
+
+  // Misconfigured values like https://host/socket.io cause broken API routes.
+  normalized = normalized.replace(/\/socket\.io$/i, '')
+
+  // Ensure API base path exists even if env only contains host URL.
+  if (!/\/api\/v\d+$/i.test(normalized)) {
+    normalized = `${normalized}/api/v1`
+  }
+
+  return normalized
+}
+
 // Guard: catch the most common deployment mistake — localhost URL in production
-const apiUrl = import.meta.env.VITE_API_URL
+const apiUrl = normalizeApiUrl(import.meta.env.VITE_API_URL)
 if (!apiUrl) {
   console.error(
     '[CartCrew] VITE_API_URL is not set.\n' +
@@ -47,10 +63,10 @@ api.interceptors.response.use(
       original._retry = true
 
       try {
-        const { login, logout } = useAuthStore.getState()
+        const { login } = useAuthStore.getState()
 
         const { data } = await axios.post(
-          `${import.meta.env.VITE_API_URL}/auth/refresh`,
+          `${apiUrl}/auth/refresh`,
           { refreshToken }
         )
 
