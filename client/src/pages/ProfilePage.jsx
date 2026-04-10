@@ -6,11 +6,10 @@ import { z } from 'zod'
 import { motion } from 'framer-motion'
 import { ArrowLeft, Camera, Loader2 } from 'lucide-react'
 import toast from 'react-hot-toast'
-import { updateProfile, changePassword, uploadAvatar } from '../api/users.api'
+import { updateProfile, changePassword, uploadAvatar, deleteAccount } from '../api/users.api'
 import { useAuthStore } from '../store/authStore'
 import errorMessage from '../utils/errorMessage'
 import { slideUp, stagger } from '../animations/variants'
-import { updateProfile, changePassword, uploadAvatar, deleteAccount } from '../api/users.api'
 const profileSchema = z.object({
   name: z.string().min(1, 'Name is required').max(50),
   bio:  z.string().max(160).optional(),
