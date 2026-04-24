@@ -70,7 +70,7 @@ CartCrew enables shared decision-making in real time — combining voting, discu
 
 ### Deployment
 - Frontend → Vercel  
-- Backend → Railway  
+- Backend → Render
 - Database → MongoDB Atlas  
 - Images → Cloudinary  
 - CI → GitHub Actions  
@@ -122,20 +122,20 @@ CartCrew enables shared decision-making in real time — combining voting, discu
 ---
 
 ### Backend
-
+```bash
 cd server  
 npm install  
 cp .env.example .env  
 npm run dev  
-
+```
 ---
 
 ### Frontend
-
+```bash
 cd client  
 npm install  
 npm run dev  
-
+```
 ---
 
 ## 🔐 Environment Variables
@@ -173,18 +173,18 @@ npm test
 ---
 
 ## 📂 Project Structure
-
+```
 cartcrew/  
 ├── client/  
 ├── server/  
 ├── .github/workflows/  
 └── ...  
-
+```
 ---
 
 ## 📦 Deployment
 
-### Backend (Railway)
+### Backend (Render)
 
 Set environment variables:
 - MONGODB_URI  
@@ -202,7 +202,7 @@ VITE_SOCKET_URL=
 
 ## 🧠 Engineering Notes
 
-- `trust proxy: 1` required for Railway rate limiting  
+- - `trust proxy: 1` required for proxy-based deployments (Render)
 - Socket.io uses polling + websocket fallback  
 - Vote deduplication handled at DB level  
 - Socket events scoped per room  
